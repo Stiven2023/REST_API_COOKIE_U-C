@@ -1,6 +1,6 @@
 import Chat from '../../models/Chat.js';
 import User from '../../models/User.js';
-import { io } from '../../socketConfig.js';
+import { io } from '../../app.js';
 import config from '../../config.js';
 import Jwt from "jsonwebtoken";
 
@@ -57,7 +57,7 @@ exports.createChat = async (req, res) => {
       { $push: { chats: newChat._id } }
     );
 
-    // io.emit('newChat', newChat);
+    io.emit('newChat', newChat);
     res.status(201).json(newChat);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });

@@ -1,6 +1,6 @@
 import Message from '../../models/Message.js';
 import Chat from '../../models/Chat.js';
-import { io } from '../../socketConfig.js';
+import { io } from '../../app.js';
 import { uploadImage } from '../../cloudinary.js';
 import jwt from 'jsonwebtoken';
 import config from '../../config.js'
