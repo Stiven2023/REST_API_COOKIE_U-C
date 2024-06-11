@@ -6,6 +6,7 @@ import cors from 'cors';
 import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { createRoles } from './libs/initialSetup.js';
+import './database.js'; // Importa la configuración de la base de datos aquí
 
 // ROUTES IMPORTS
 import authRoutes from './routes/user/auth.routes.js';
@@ -17,14 +18,14 @@ import messageRoutes from './routes/chat/MessageRoutes.js';
 // SERVER INITIALIZATION
 const app = express();
 const server = http.createServer(app);
-createRoles();
-
-export const io = new SocketServer(server, {
+const io = new SocketServer(server, {
   cors: {
-    origin: '*', // Permitir todas las solicitudes de origen
+    origin: '*',
     methods: ["GET", "POST"],
   }
 });
+
+createRoles();
 
 app.set('pkg', pkg);
 
@@ -45,23 +46,9 @@ io.on('connection', (socket) => {
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
-  socket.on('message', (message) => {
-    console.log('Message received:', message);
-    io.to(message.roomId).emit('message', {
-      body: message.body,
-      from: socket.id.slice(6),
-    });
-  });
-
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
-});
-
-// Socket server
-const PORT = 3001;
-server.listen(PORT, () => {
-  console.log(`Servidor socket corriendo en el puerto ${PORT}`);
 });
 
 // ROUTES
@@ -79,4 +66,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/chat/messages', messageRoutes);
 
-export default app;
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
