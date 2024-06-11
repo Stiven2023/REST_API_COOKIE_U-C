@@ -6,7 +6,6 @@ import cors from 'cors';
 import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { createRoles } from './libs/initialSetup.js';
-import './database.js'; // Importa la configuración de la base de datos aquí
 
 // ROUTES IMPORTS
 import authRoutes from './routes/user/auth.routes.js';
@@ -18,9 +17,9 @@ import messageRoutes from './routes/chat/MessageRoutes.js';
 // SERVER INITIALIZATION
 const app = express();
 const server = http.createServer(app);
-const io = new SocketServer(server);
-
 createRoles();
+
+export const io = new SocketServer(server);
 
 app.set('pkg', pkg);
 
@@ -46,6 +45,12 @@ io.on('connection', (socket) => {
   });
 });
 
+// Socket server
+const PORT = 3001;
+server.listen(PORT, () => {
+  console.log(`Servidor socket corriendo en el puerto ${PORT}`);
+});
+
 // ROUTES
 app.get('/', (req, res) => {
   res.json({
@@ -61,7 +66,4 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/chat/messages', messageRoutes);
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+export default app;
