@@ -1,6 +1,6 @@
 {
   "name": "cokie-api",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "ᴀᴘɪ ꜰᴜʟʟ ꜰᴏʀ ᴄᴏᴋɪᴇ ꜱᴏᴄɪᴀʟ-ɴᴇᴛᴡᴏʀᴋ",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "start": "node build/index.js"
   },
   "keywords": [],
-  "author": "Steven Alexis - Snaider Rangel  - ᴀʟᴇᴊᴏ ᴀᴄᴇᴠᴇᴅᴏ",
+  "author": "ᴀʟᴇᴊᴏ ᴀᴄᴇᴠᴇᴅᴏ",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",

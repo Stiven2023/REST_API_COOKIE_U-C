@@ -13,11 +13,6 @@ import userRoutes from './routes/user/user.routes.js';
 import profileRoutes from './routes/user/profile.routes.js';
 import chatRoutes from './routes/chat/ChatRoutes.js';
 import messageRoutes from './routes/chat/MessageRoutes.js';
-import routerPost from './routes/Post/Post.js';
-import routerLike from './routes/Post/Likes.js';
-import routerComment from './routes/Post/Comments.js';
-
-
 
 // SERVER INITIALIZATION
 const app = express();
@@ -78,17 +73,10 @@ app.get('/', (req, res) => {
     version: app.get('pkg').version,
   });
 });
-
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
-
 app.use('/api/chat', chatRoutes);
 app.use('/api/chat/messages', messageRoutes);
-
-app.use('/api/posts', routerPost)
-app.use('/api/posts', routerLike)
-app.use('/api/posts', routerComment)
-
 
 export default app;

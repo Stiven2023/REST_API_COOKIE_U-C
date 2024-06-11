@@ -22,7 +22,7 @@ export async function uploadVideoPost(filePath) {
     })
 }
 
-export async function uploadImagePost(filePath) {
+export async function IploadImagePost(filePath) {
     return await cloudinary.uploader.upload(filePath, {
         folder: 'cokieEnterprice/posts/images'
     })
