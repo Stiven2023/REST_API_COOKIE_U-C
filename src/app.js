@@ -18,12 +18,7 @@ import messageRoutes from './routes/chat/MessageRoutes.js';
 // SERVER INITIALIZATION
 const app = express();
 const server = http.createServer(app);
-const io = new SocketServer(server, {
-  cors: {
-    origin: '*',
-    methods: ["GET", "POST"],
-  }
-});
+const io = new SocketServer(server);
 
 createRoles();
 
