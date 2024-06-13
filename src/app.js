@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
 });
 
 // Socket server
-const PORT = 3001;
+const PORT = process.env.PORT_SOCKET || 3001;
 server.listen(PORT, () => {
   console.log(`Servidor socket corriendo en el puerto ${PORT}`);
 });
@@ -60,6 +60,7 @@ app.get('/', (req, res) => {
     version: app.get('pkg').version,
   });
 });
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
