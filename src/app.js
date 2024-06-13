@@ -26,8 +26,11 @@ app.set('pkg', pkg);
 app.use(express.json());
 app.use(cors({
   origin: 'http://localhost:3000',
-  credentials: true, 
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  allowedHeaders: 'Content-Type,Authorization'
 }));
+
 app.use(morgan('dev'));
 
 app.use(fileUpload({
