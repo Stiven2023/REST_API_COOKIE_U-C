@@ -24,7 +24,10 @@ export const io = new SocketServer(server);
 app.set('pkg', pkg);
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  credentials: true, 
+}));
 app.use(morgan('dev'));
 
 app.use(fileUpload({
