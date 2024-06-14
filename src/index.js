@@ -4,10 +4,8 @@ import app from './app.js';
 
 const PORT = 3001;
 
-// Create the server
 const server = http.createServer(app);
 
-// Initialize Socket.IO server
 export const io = new SocketServer(server);
 
 io.on('connection', (socket) => {

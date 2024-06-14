@@ -12,9 +12,10 @@ import messageRoutes from './routes/chat/MessageRoutes.js';
 const app = express();
 createRoles();
 
+// Configuración de CORS
 app.use(cors({
-  origin: 'http://localhost:3000', // Especifica el origen correcto de tu frontend
-  credentials: true,
+  origin: 'http://localhost:3000',
+  credentials: true, 
 }));
 
 app.use(express.json());
@@ -25,7 +26,7 @@ app.use(fileUpload({
   tempFileDir: './tmp'
 }));
 
-// RUTAS
+// Rutas
 app.get('/', (req, res) => {
   res.json({
     message: 'API is running',
