@@ -2,12 +2,15 @@ import express from 'express';
 import morgan from 'morgan';
 import fileUpload from 'express-fileupload';
 import cors from 'cors';
+import connectDB from './database.js';
 import { createRoles } from './libs/initialSetup.js';
 import authRoutes from './routes/user/auth.routes.js';
 import userRoutes from './routes/user/user.routes.js';
 import profileRoutes from './routes/user/profile.routes.js';
 import chatRoutes from './routes/chat/ChatRoutes.js';
 import messageRoutes from './routes/chat/MessageRoutes.js';
+
+connectDB();
 
 const app = express();
 createRoles();
