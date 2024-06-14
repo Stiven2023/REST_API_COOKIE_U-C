@@ -13,7 +13,7 @@ const app = express();
 createRoles();
 
 app.use(cors({
-  origin: '*',
+  origin: 'http://localhost:3000', // Especifica el origen correcto de tu frontend
   credentials: true,
 }));
 
