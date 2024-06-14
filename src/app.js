@@ -15,7 +15,6 @@ connectDB();
 const app = express();
 createRoles();
 
-// Configuración de CORS
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true, 

@@ -6,7 +6,13 @@ const PORT = 3001;
 
 const server = http.createServer(app);
 
-export const io = new SocketServer(server);
+export const io = new SocketServer(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
