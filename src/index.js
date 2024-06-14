@@ -1,42 +1,37 @@
-import express from 'express';
-import morgan from 'morgan';
-import fileUpload from 'express-fileupload';
-import cors from 'cors';
-import { createRoles } from './libs/initialSetup.js';
-import authRoutes from './routes/user/auth.routes.js';
-import userRoutes from './routes/user/user.routes.js';
-import profileRoutes from './routes/user/profile.routes.js';
-import chatRoutes from './routes/chat/ChatRoutes.js';
-import messageRoutes from './routes/chat/MessageRoutes.js';
+import http from "http";
+import { Server as SocketServer } from 'socket.io';
+import app from './app.js';
 
-const app = express();
-createRoles();
+const PORT = 3001;
 
-// Permitir todas las solicitudes CORS (solo para desarrollo)
-app.use(cors({
-  origin: '*',
-  credentials: true,
-}));
+// Create the server
+const server = http.createServer(app);
 
-app.use(express.json());
-app.use(morgan('dev'));
+// Initialize Socket.IO server
+export const io = new SocketServer(server);
 
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: './tmp'
-}));
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
 
-// RUTAS
-app.get('/', (req, res) => {
-  res.json({
-    message: 'API is running',
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
+  });
+
+  socket.on('message', (message) => {
+    console.log('Message received:', message);
+    io.to(message.roomId).emit('message', {
+      body: message.body,
+      from: socket.id.slice(6),
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
   });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/chat/messages', messageRoutes);
-
-export default app;
+// Start the server
+server.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});

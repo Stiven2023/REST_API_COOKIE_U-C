@@ -9,25 +9,15 @@ import profileRoutes from './routes/user/profile.routes.js';
 import chatRoutes from './routes/chat/ChatRoutes.js';
 import messageRoutes from './routes/chat/MessageRoutes.js';
 
-// Load package.json in an alternative way
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import path, { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const packageJsonPath = path.resolve(__dirname, '../package.json');
-const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-
-// SERVER INITIALIZATION
 const app = express();
 createRoles();
 
-app.set('pkg', pkg);
+app.use(cors({
+  origin: '*',
+  credentials: true,
+}));
 
 app.use(express.json());
-app.use(cors());
 app.use(morgan('dev'));
 
 app.use(fileUpload({
@@ -35,13 +25,10 @@ app.use(fileUpload({
   tempFileDir: './tmp'
 }));
 
-// ROUTES
+// RUTAS
 app.get('/', (req, res) => {
   res.json({
-    name: app.get('pkg').name,
-    author: app.get('pkg').author,
-    description: app.get('pkg').description,
-    version: app.get('pkg').version,
+    message: 'API is running',
   });
 });
 
