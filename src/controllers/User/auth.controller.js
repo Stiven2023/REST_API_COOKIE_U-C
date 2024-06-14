@@ -8,7 +8,7 @@ import sendCodeRecoverEmail from '../../utils/emails/codeEmail.js'
 import sendChangePasswordEmail from '../../utils/emails/changePasswordEmail.js'
 import { validateRegister, validateLogin } from '../../middlewares/validateAuth.js'
 
-exports.signup = async (req, res) => {
+const signup = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
 
@@ -48,7 +48,7 @@ exports.signup = async (req, res) => {
     }
 };
 
-exports.signin = async (req, res) => {
+const signin = async (req, res) => {
     try {
         const { emailOrUsername, password } = req.body;
 
@@ -93,7 +93,7 @@ exports.signin = async (req, res) => {
     }
 };
 
-exports.logout = async (req, res) => {
+const logout = async (req, res) => {
     try {
         const token = req.headers['x-access-token'];
         const decoded = jwt.verify(token, config.secret);
@@ -107,7 +107,7 @@ exports.logout = async (req, res) => {
     }
 }
 
-exports.codeRecoverPassword = async (req, res) => {
+const codeRecoverPassword = async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
@@ -128,7 +128,7 @@ exports.codeRecoverPassword = async (req, res) => {
     }
 }
 
-exports.validateCode = async (req, res) => {
+const validateCode = async (req, res) => {
     try {
         const token = req.headers['reset-pass-token'];
         const decode = jwt.verify(token, config.secret);
@@ -151,7 +151,7 @@ exports.validateCode = async (req, res) => {
     }
 }
 
-exports.changePassword = async (req, res) => {
+const changePassword = async (req, res) => {
     try {
         const token = req.headers['reset-pass-token'];
         const decode = jwt.verify(token, config.secret);
@@ -178,3 +178,5 @@ exports.changePassword = async (req, res) => {
         res.status(500).json({message: error.message});
     }
 }
+
+export { signin, signup, logout, codeRecoverPassword, validateCode, changePassword }

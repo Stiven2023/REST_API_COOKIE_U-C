@@ -1,6 +1,6 @@
 import {ROLES} from '../models/Role.js';
 
-exports.checkRoleExisted = (req, res, next) => {
+const checkRoleExisted = (req, res, next) => {
     if(req.body.role){
         for (let i = 0; i < req.body.role.length; i++) {
             if(!ROLES.includes(req.body.role[i])){
@@ -12,3 +12,5 @@ exports.checkRoleExisted = (req, res, next) => {
     }
     next();
 };
+
+export default checkRoleExisted;

@@ -3,15 +3,17 @@
   "version": "1.0.0",
   "description": "ᴀᴘɪ ꜰᴜʟʟ ꜰᴏʀ ᴄᴏᴋɪᴇ ꜱᴏᴄɪᴀʟ-ɴᴇᴛᴡᴏʀᴋ",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "build": "babel src --out-dir build",
     "dev": "nodemon src/index.js --exec babel-node",
-    "start": "node build/index.js"
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "ᴀʟᴇᴊᴏ ᴀᴄᴇᴠᴇᴅᴏ",
   "license": "ISC",
   "dependencies": {
+    "@babel/plugin-syntax-import-attributes": "^7.24.7",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.2.0",
     "cokie-api": ".",

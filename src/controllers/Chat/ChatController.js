@@ -1,10 +1,10 @@
 import Chat from '../../models/Chat.js';
 import User from '../../models/User.js';
-import { io } from '../../app.js';
+import { io } from '../../index.js';
 import config from '../../config.js';
 import Jwt from "jsonwebtoken";
 
-exports.createChat = async (req, res) => {
+const createChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
@@ -64,7 +64,7 @@ exports.createChat = async (req, res) => {
   }
 }
 
-exports.getAllChats = async (req, res) => {
+const getAllChats = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
@@ -79,7 +79,7 @@ exports.getAllChats = async (req, res) => {
   }
 }
 
-exports.joinChat = async (req, res) => {
+const joinChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
@@ -110,7 +110,7 @@ exports.joinChat = async (req, res) => {
   }
 }
 
-exports.getChatById = async (req, res) => {
+const getChatById = async (req, res) => {
   try {
     const chatId = req.params.id;
     const chat = await Chat.findById(chatId);
@@ -125,7 +125,7 @@ exports.getChatById = async (req, res) => {
   }
 }
 
-exports.updateChat = async (req, res) => {
+const updateChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
@@ -158,7 +158,7 @@ exports.updateChat = async (req, res) => {
   }
 }
 
-exports.deleteChat = async (req, res) => {
+const deleteChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
@@ -185,3 +185,5 @@ exports.deleteChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 }
+
+export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById }

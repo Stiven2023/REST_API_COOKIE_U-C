@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 
-exports.validateRegister = async (username, email, password) => {
+const validateRegister = async (username, email, password) => {
     if (username.length < 8 || username.length > 20) {
         throw new Error("El nombre de usuario debe tener entre 8 y 20 caracteres");
     }
@@ -24,7 +24,7 @@ exports.validateRegister = async (username, email, password) => {
     }
 };
 
-exports.validateLogin = async (emailOrUsername, password) => {
+const validateLogin = async (emailOrUsername, password) => {
     const userFound = await User.findOne({ $or: [{ email: emailOrUsername }, { username: emailOrUsername }] }).populate("role");
 
     if (!userFound) {
@@ -37,3 +37,5 @@ exports.validateLogin = async (emailOrUsername, password) => {
         throw new Error("Contraseña inválida");
     }
 };
+
+export { validateRegister, validateLogin }

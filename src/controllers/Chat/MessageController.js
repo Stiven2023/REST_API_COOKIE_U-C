@@ -1,13 +1,13 @@
 import Message from '../../models/Message.js';
 import Chat from '../../models/Chat.js';
-import { io } from '../../app.js';
+import { io } from '../../index.js';
 import { uploadImage } from '../../cloudinary.js';
 import jwt from 'jsonwebtoken';
 import config from '../../config.js'
 import User from '../../models/User.js';
 import fs from 'fs-extra';
 
-exports.createMessage = async (req, res) => {
+const createMessage = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = jwt.verify(token, config.secret);
@@ -54,7 +54,7 @@ exports.createMessage = async (req, res) => {
   }
 }
 
-exports.getAllMessages = async (req, res) => {
+const getAllMessages = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decodedToken = jwt.verify(token, config.secret);
@@ -80,7 +80,7 @@ exports.getAllMessages = async (req, res) => {
   }
 }
 
-exports.getMessageById = async (req, res) => {
+const getMessageById = async (req, res) => {
   try {
     const { chatId, messageId } = req.params;
 
@@ -101,7 +101,7 @@ exports.getMessageById = async (req, res) => {
   }
 }
 
-exports.updateMessage = async (req, res) => {
+const updateMessage = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = jwt.verify(token, config.secret);
@@ -130,7 +130,7 @@ exports.updateMessage = async (req, res) => {
 }
 
 
-exports.deleteMessage = async (req, res) => {
+const deleteMessage = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = jwt.verify(token, config.secret);
@@ -164,3 +164,5 @@ exports.deleteMessage = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+export { createMessage, updateMessage, deleteMessage, getAllMessages, getMessageById }

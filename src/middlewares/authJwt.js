@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
-import config from '../config'
+import config from '../config.js'
 import User from '../models/User.js'
 import Role from '../models/Role.js'
 
-exports.verifyToken = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     try {
         const token = req.headers['x-access-token'];
 
@@ -21,7 +21,7 @@ exports.verifyToken = async (req, res, next) => {
     }
 };
 
-exports.isAdmin = async (req, res, next) => {
+const isAdmin = async (req, res, next) => {
     const user = await User.findById(req.userId);
     const roles = await Role.find({ _id: { $in: user.role } });
     for (let i = 0; i < roles.length; i++) {
@@ -33,7 +33,7 @@ exports.isAdmin = async (req, res, next) => {
     res.status(403).json({ message: 'Required Admin Role' });
 };
 
-exports.isModerator = async (req, res, next) => {
+const isModerator = async (req, res, next) => {
     const user = await User.findById(req.userId);
     const roles = await Role.find({ _id: { $in: user.role } });
     
@@ -47,7 +47,7 @@ exports.isModerator = async (req, res, next) => {
     return res.status(403).json({ message: 'Required Moderator Role' });
 };
 
-exports.isUser = async (req, res, next) => {
+const isUser = async (req, res, next) => {
     const user = await User.findById(req.userId);
     const roles = await Role.find({ _id: { $in: user.role } });
     
@@ -61,7 +61,7 @@ exports.isUser = async (req, res, next) => {
     return res.status(403).json({ message: 'Required User Role' });
 };
 
-exports.isModeratorOrAdmin = async (req, res, next) => {
+const isModeratorOrAdmin = async (req, res, next) => {
     const user = await User.findById(req.userId);
     const roles = await Role.find({ _id: { $in: user.role } });
     for (let i = 0; i < roles.length; i++) {
@@ -72,3 +72,5 @@ exports.isModeratorOrAdmin = async (req, res, next) => {
     }
     res.status(403).json({ message: 'Required Moderator or Admin Role' });
 };
+
+export { verifyToken, isAdmin, isModerator, isUser, isModeratorOrAdmin }
