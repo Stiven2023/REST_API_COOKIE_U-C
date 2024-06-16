@@ -22,20 +22,11 @@ io.on('connection', (socket) => {
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
-  socket.on('message', (message) => {
-    console.log('Message received:', message);
-    io.to(message.roomId).emit('message', {
-      body: message.body,
-      from: socket.id.slice(6),
-    });
-  });
-
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
 });
 
-// Start the server
 server.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

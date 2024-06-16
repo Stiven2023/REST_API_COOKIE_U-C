@@ -10,24 +10,23 @@ import fs from 'fs-extra';
 const createMessage = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
     const { chatId } = req.params;
+    const { content } = req.body;
 
     const user = await User.findById(userId);
-
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
     const sender = user._id;
-    const { content } = req.body;
 
-    const messageData = { sender };
-
-    if (content) {
-      messageData.content = content;
-    }
+    const messageData = { sender, content };
 
     const message = new Message(messageData);
 
@@ -43,16 +42,21 @@ const createMessage = async (req, res) => {
     await message.save();
 
     const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
     chat.messages.push(message);
     await chat.save();
 
-    io.emit('newMessage', message, chatId);
+    io.to(chatId).emit('newMessage', message);
+
     return res.status(201).json(message);
   } catch (error) {
-    console.error("Error creating message:", error);
+    console.error('Error creating message:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const getAllMessages = async (req, res) => {
   try {
