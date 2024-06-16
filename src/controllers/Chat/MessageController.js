@@ -49,7 +49,7 @@ const createMessage = async (req, res) => {
     chat.messages.push(message);
     await chat.save();
 
-    io.to(chatId).emit('newMessage', message);
+    io.to(chatId).emit('newMessage', { ...message.toObject(), chatId });
 
     return res.status(201).json(message);
   } catch (error) {
