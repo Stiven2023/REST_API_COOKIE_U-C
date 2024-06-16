@@ -81,9 +81,7 @@ const getAllChats = async (req, res) => {
 
 const joinChat = async (req, res) => {
   try {
-    const token = req.headers['x-access-token'];
-    const decoded = Jwt.verify(token, config.secret);
-    const userId = decoded.id;
+    const userId = req.userId;
     const chatId = req.params.chatid;
 
     const user = await User.findById(userId);
@@ -108,7 +106,7 @@ const joinChat = async (req, res) => {
     console.error("Error joining chat:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const getChatById = async (req, res) => {
   try {
