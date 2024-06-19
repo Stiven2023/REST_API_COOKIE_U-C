@@ -367,7 +367,7 @@ const searchUsers = async (req, res) => {
           ],
         },
       ],
-    });
+    }).populate("role", "name");
 
     res.json(usuarios);
   } catch (error) {
@@ -377,7 +377,8 @@ const searchUsers = async (req, res) => {
 
 export {
   getAllUsers,
-  getFollowers,
+  
+  etFollowers,
   getFollowing,
   getFriends,
   getUsersById,
