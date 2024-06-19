@@ -1,4 +1,5 @@
 import Chat from '../../models/Chat.js';
+import Message from '../../models/Message.js';
 import User from '../../models/User.js';
 import { io } from '../../index.js';
 import config from '../../config.js';
@@ -184,4 +185,43 @@ const deleteChat = async (req, res) => {
   }
 }
 
-export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById }
+const getAllChatsForCharts = async (req, res) => {
+  try {
+    const token = req.headers['x-access-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Token missing' });
+    }
+
+    const decoded = Jwt.verify(token, config.secret);
+
+    const chats = await Chat.find()
+      .select('_id createdAt');
+
+    let allMessages = [];
+
+    for (let i = 0; i < chats.length; i++) {
+      const chatId = chats[i]._id;
+
+      const messages = await Message.find({ chat: chatId })
+        .select('createdAt')
+
+      allMessages = allMessages.concat(messages.map(message => ({
+        createdAt: message.createdAt,
+      })));
+    }
+
+  
+    res.json({
+      totalChats: chats.length,
+      chats: chats.map(chat => ({
+        _id: chat._id,
+        createdAt: chat.createdAt,
+        messages: allMessages.filter(message => message.chat.toString() === chat._id.toString())
+      }))
+    });
+  } catch (error) {
+    console.error("Error getting all chats for charts:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts }
