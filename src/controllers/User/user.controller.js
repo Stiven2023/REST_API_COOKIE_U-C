@@ -377,8 +377,7 @@ const searchUsers = async (req, res) => {
 
 export {
   getAllUsers,
-  
-  etFollowers,
+  getFollowers,
   getFollowing,
   getFriends,
   getUsersById,
