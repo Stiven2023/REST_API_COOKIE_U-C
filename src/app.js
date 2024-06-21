@@ -3,12 +3,16 @@ import morgan from 'morgan';
 import fileUpload from 'express-fileupload';
 import cors from 'cors';
 import connectDB from './database.js';
+
 import { createRoles } from './libs/initialSetup.js';
+
 import authRoutes from './routes/user/auth.routes.js';
 import userRoutes from './routes/user/user.routes.js';
 import profileRoutes from './routes/user/profile.routes.js';
 import chatRoutes from './routes/chat/ChatRoutes.js';
 import messageRoutes from './routes/chat/MessageRoutes.js';
+import statsRoutes from './routes/user/stats.routes.js'
+import postRoutes from './routes/Post/Post.js'
 
 connectDB();
 
@@ -40,5 +44,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/chat/messages', messageRoutes);
+app.use('/api/posts', postRoutes)
+app.use('/api/stats', statsRoutes);
 
 export default app;
