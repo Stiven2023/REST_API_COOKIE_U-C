@@ -194,23 +194,21 @@ const getAllChatsForCharts = async (req, res) => {
 
     const decoded = Jwt.verify(token, config.secret);
 
-    const chats = await Chat.find()
-      .select('_id createdAt');
+    const chats = await Chat.find().select('_id createdAt');
 
     let allMessages = [];
 
     for (let i = 0; i < chats.length; i++) {
       const chatId = chats[i]._id;
 
-      const messages = await Message.find({ chat: chatId })
-        .select('createdAt')
+      const messages = await Message.find({ chat: chatId }).select('createdAt chat');
 
       allMessages = allMessages.concat(messages.map(message => ({
         createdAt: message.createdAt,
+        chat: message.chat,
       })));
     }
 
-  
     res.json({
       totalChats: chats.length,
       chats: chats.map(chat => ({
@@ -224,4 +222,5 @@ const getAllChatsForCharts = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts }
