@@ -196,18 +196,11 @@ const getAllChatsForCharts = async (req, res) => {
 
     const chats = await Chat.find().select('_id createdAt');
 
-    let allMessages = [];
+    const allMessageIds = chats.reduce((acc, chat) => {
+      return acc.concat(chat.messages);
+    }, []);
 
-    for (let i = 0; i < chats.length; i++) {
-      const chatId = chats[i]._id;
-
-      const messages = await Message.find({ chat: chatId }).select('createdAt chat');
-
-      allMessages = allMessages.concat(messages.map(message => ({
-        createdAt: message.createdAt,
-        chat: message.chat,
-      })));
-    }
+    const allMessages = await Message.find({ _id: { $in: allMessageIds } }).select('createdAt chat');
 
     res.json({
       totalChats: chats.length,
@@ -222,5 +215,6 @@ const getAllChatsForCharts = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts }
