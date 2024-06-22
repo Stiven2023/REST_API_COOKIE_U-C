@@ -2,7 +2,7 @@ import { PostSchemaZod } from "../../ZodSchemes/PostSchema.js";
 import PostModel from "../../models/Post.js";
 import multer from "multer";
 import path from "path";
-import { uploadImagePost } from "../../cloudinary.js";
+import { uploadImage } from "../../cloudinary.js";
 import fs from "fs/promises";
 import User from '../../models/User.js';
 import config from '../../config.js'

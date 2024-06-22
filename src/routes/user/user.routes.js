@@ -25,7 +25,7 @@ router.delete('/:userId', [verifyToken, isAdmin], deleteUser);
 router.put('/changeRole', [verifyToken, isAdmin], changeRole);
 
 // Moder or Admin
-router.get('/', [verifyToken, isModeratorOrAdmin], getAllUsers);
+router.get('/', [verifyToken], getAllUsers);
 router.post('/searchByUsername', [verifyToken, isModeratorOrAdmin], getUsersByUsername);
 router.put('/:userId', [verifyToken, isModeratorOrAdmin], updateUser);
 router.put('/status/:userId', [verifyToken, isModeratorOrAdmin], updateStatus);
