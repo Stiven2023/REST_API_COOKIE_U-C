@@ -194,11 +194,13 @@ const getAllChatsForCharts = async (req, res) => {
 
     const decoded = Jwt.verify(token, config.secret);
 
-    const chats = await Chat.find().select('_id createdAt');
+    const chats = await Chat.find().select('_id messages createdAt');
 
     const allMessageIds = chats.reduce((acc, chat) => {
       return acc.concat(chat.messages);
     }, []);
+
+    console.log(allMessageIds)
 
     const allMessages = await Message.find({ _id: { $in: allMessageIds } }).select('createdAt');
 
