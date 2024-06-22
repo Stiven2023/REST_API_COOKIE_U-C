@@ -2,11 +2,10 @@ import { PostSchemaZod } from "../../ZodSchemes/PostSchema.js";
 import PostModel from "../../models/Post.js";
 import multer from "multer";
 import path from "path";
-import { uploadImage } from "../../cloudinary.js";
 import fs from "fs/promises";
 import User from '../../models/User.js';
 import config from '../../config.js'
-
+import jwt from 'jsonwebtoken';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -55,10 +54,14 @@ class PostController {
   }
   static async create(request, response) {
 
-    const token = req.headers['x-access-token'];
+    console.log('Creating... Post');
+
+    const token = request.headers['x-access-token'];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
     const user = await User.findById(userId);
+
+    console.log(decoded);
 
     //* Check if user exists
     if (!user) {
@@ -71,7 +74,8 @@ class PostController {
           .status(400)
           .json({ Error: "Failed to upload image", Details: err });
       }
-      const postData = request.body;
+      const content = request.body.content;
+      const postData = { content, userId };
       const validationResult = PostSchemaZod.safeParse(postData);
       if (validationResult.success) {
         if (request.file) {

@@ -1,15 +1,15 @@
 import { Router, response } from "express";
 import commentsController from "../../controllers/Post/Comment.js";
 
-const routerComment = Router();
+const commentRoutes = Router();
 
 // * Comments
-routerComment.get("/", () => {
+commentRoutes.get("/", () => {
   response.json({ message: "Welcome to comments" });
 });
 
-routerComment.get("/:postId/comments", commentsController.read); //* read the comments
-routerComment.post("/:postId/comments", commentsController.create); //* create a comment
-routerComment.delete("/:postId/comments/:id", commentsController.delete); //* Delete a post
+commentRoutes.get("/:postId/comments", commentsController.read); //* read the comments
+commentRoutes.post("/:postId/comments", commentsController.create); //* create a comment
+commentRoutes.delete("/:postId/comments/:id", commentsController.delete); //* Delete a post
 
-export default routerComment;
+export default commentRoutes;
