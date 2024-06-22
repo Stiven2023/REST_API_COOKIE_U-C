@@ -196,16 +196,22 @@ const getAllChatsForCharts = async (req, res) => {
 
     const chats = await Chat.find().select('_id messages createdAt');
 
-    const allMessageIds = chats.reduce((acc, chat) => {
-      return acc.concat(chat.messages);
-    }, []);
+    let allMessages = [];
 
-    console.log(allMessageIds)
+    for (let i = 0; i < chats.length; i++) {
+      const chat = chats[i];
+      const chatId = chat._id;
 
-    const allMessages = await Message.find({ _id: { $in: allMessageIds } }).select('createdAt');
+      const messages = await Message.find({ _id: { $in: chat.messages } }).select('createdAt');
+      console.log("Messages for chat " + chatId + ":", messages);
+
+      allMessages = allMessages.concat(messages.map(message => ({
+        createdAt: message.createdAt,
+        chat: chatId,
+      })));
+    }
 
     res.json({
-      totalMessages: allMessages,
       totalChats: chats.length,
       chats: chats.map(chat => ({
         _id: chat._id,
