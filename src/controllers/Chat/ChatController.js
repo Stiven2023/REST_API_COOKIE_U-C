@@ -200,9 +200,10 @@ const getAllChatsForCharts = async (req, res) => {
       return acc.concat(chat.messages);
     }, []);
 
-    const allMessages = await Message.find({ _id: { $in: allMessageIds } }).select('createdAt chat');
+    const allMessages = await Message.find({ _id: { $in: allMessageIds } }).select('createdAt');
 
     res.json({
+      totalMessages: allMessages,
       totalChats: chats.length,
       chats: chats.map(chat => ({
         _id: chat._id,
