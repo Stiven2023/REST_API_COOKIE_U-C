@@ -1,25 +1,15 @@
 import { z } from "zod";
 
-export const userSchemaZod = z.object({
-  userId:z.string(),
-  name: z.string(),
-  nickName: z.string(),
-  image: z.string().optional(),
-});
-
 export const commentSchemaZod = z.object({
   content: z.string(),
-  user: userSchemaZod,
+  userId: z.string(),
 });
 
-export const likeSchemaZod = z.object({
-  user: userSchemaZod,
-});
 
 export const PostSchemaZod = z.object({
   content: z.string().max(1000),
   image: z.string().optional(),
-  user: userSchemaZod,
+  userId: z.string(),
   comments: z.array(commentSchemaZod).optional(),
-  likes: z.array(likeSchemaZod).optional(),
+  likes: z.array(z.string()).optional(),
 });

@@ -13,11 +13,19 @@ class commentController {
     response.json(post.comments);
   }
   static async create(request, response) {
-    const token = req.headers['x-access-token'];
+
+    console.log('Creating... Comment');
+
+    const token = request.headers['x-access-token'];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
+    const content = request.body.content;
+
     const { postId } = request.params;
-    const comment = request.body;
+    const comment = {
+      content,
+      userId,
+    };
 
     //* verify user exists
     const user = await User.findById(userId);
