@@ -13,7 +13,26 @@ class commentController {
         return response.status(404).json({ error: "Post not found" });
       }
 
-      response.json(post.comments);
+      // Obtener userIds únicos de los comentarios
+      const userIds = post.comments.map((comment) => comment.userId);
+
+      // Consultar los usuarios correspondientes a los userIds
+      const users = await User.find(
+        { _id: { $in: userIds } },
+        "username fullname image"
+      ).lean();
+
+      // Crear un mapa para mapear userIds a usuarios
+      const userMap = {};
+      users.forEach((user) => (userMap[user._id] = user));
+
+      // Modificar los comentarios para incluir los datos básicos del usuario
+      const commentsWithUserData = post.comments.map((comment) => ({
+        content: comment.content,
+        user: userMap[comment.userId], // Agregar los datos básicos del usuario
+      }));
+
+      response.json(commentsWithUserData);
     } catch (error) {
       response
         .status(500)
