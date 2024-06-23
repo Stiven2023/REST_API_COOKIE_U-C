@@ -3,9 +3,10 @@ import PostModel from "../../models/Post.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
-import User from '../../models/User.js';
-import config from '../../config.js'
-import jwt from 'jsonwebtoken';
+import User from "../../models/User.js";
+import config from "../../config.js";
+import jwt from "jsonwebtoken";
+import { uploadImage } from "../../cloudinary.js";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -53,10 +54,9 @@ class PostController {
       });
   }
   static async create(request, response) {
+    console.log("Creating... Post");
 
-    console.log('Creating... Post');
-
-    const token = request.headers['x-access-token'];
+    const token = request.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
     const user = await User.findById(userId);
@@ -65,57 +65,43 @@ class PostController {
 
     //* Check if user exists
     if (!user) {
-      return response.status(401).json({ error: 'User not found' });
+      return response.status(401).json({ error: "User not found" });
     }
     //* Create resources with image upload
-    upload.single("image")(request, response, async (err) => {
-      if (err) {
-        return response
-          .status(400)
-          .json({ Error: "Failed to upload image", Details: err });
-      }
-      const content = request.body.content;
-      const postData = { content, userId };
-      const validationResult = PostSchemaZod.safeParse(postData);
-      if (validationResult.success) {
-        if (request.file) {
-          const result = await uploadImagePost(request.file.path);
-          postData.image = result.secure_url;
+    const postData = {
+      userId: userId,
+      content: request.body.content,
+    };
 
-          try {
-            await fs.unlink(request.file.path);
-            console.log("Temporary image deleted successfully");
-          } catch (err) {
-            console.error("Failed to delete temporary image", err);
-          }
-        } else {
-          postData.image = null;
-        }
-        const newPost = new PostModel(postData);
+    try {
+      const post = new PostModel(postData);
 
-        newPost
-          .save()
-          .then(() => {
-            response
-              .status(201)
-              .json({ Message: "Resource created successfully" });
-          })
-          .catch((error) => {
-            response
-              .status(500)
-              .json({ Error: "Failed to create resource", Details: error });
-          });
+      if (request.files?.image) {
+        const result = await uploadImage(request.files.image.tempFilePath);
+        console.log(`Result upload: ${result}`);
+        post.mediaUrl = {
+          public_id: result.public_id,
+          secure_url: result.secure_url,
+        };
+        post.image = result.secure_url;
+        await fs.unlink(request.files.image.tempFilePath);
       } else {
-        return response
-          .status(400)
-          .json({ Error: "Invalid data", Details: validationResult.error });
+        post.mediaUrl = null;
       }
-    });
+
+      console.log(post);
+
+      await post.save().then(() => {
+        response.status(201).json(post);
+      });
+        
+    } catch (error) {
+      return response.status(500).json({ error: "Internal Server Error" });
+    }
   }
   static async delete(request, response) {
-
     const { id } = request.params;
-    const token = req.headers['x-access-token'];
+    const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
     const user = await User.findById(userId);
@@ -124,21 +110,23 @@ class PostController {
     //* Check if user exists
 
     if (!user) {
-      return response.status(401).json({ error: 'User not found' });
+      return response.status(401).json({ error: "User not found" });
     }
 
     //* Check if post exists
 
     if (!post) {
-      return response.status(404).json({ error: 'Post not found' });
+      return response.status(404).json({ error: "Post not found" });
     }
 
     //* Check if user is authorized
 
-    if(post.user.id !== userId || user.role !== 'admin' && user.role !== 'moderator') {
-      return response.status(401).json({ error: 'Unauthorized' });
+    if (
+      post.user.id !== userId ||
+      (user.role !== "admin" && user.role !== "moderator")
+    ) {
+      return response.status(401).json({ error: "Unauthorized" });
     }
-
 
     //* Delete resources
     PostModel.findByIdAndDelete(id)

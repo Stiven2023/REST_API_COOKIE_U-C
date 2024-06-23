@@ -7,6 +7,10 @@ const postSchema = new Schema(
       type: String,
       required: true,
     },
+    mediaUrl: {
+      public_id: String,
+      secure_url: String,
+    },
     image: {
       type: String,
       required: false,
@@ -27,6 +31,10 @@ const postSchema = new Schema(
         content: {
           type: String,
           required: true,
+        },
+        emoji: {
+          type: String,
+          required: false,
         },
         userId: {
           type: Schema.Types.ObjectId,
