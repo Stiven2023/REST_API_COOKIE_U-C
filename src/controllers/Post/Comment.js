@@ -13,25 +13,21 @@ class commentController {
         return response.status(404).json({ error: "Post not found" });
       }
 
-      // Obtener userIds únicos de los comentarios
       const userIds = post.comments.map((comment) => comment.userId);
 
-      // Consultar los usuarios correspondientes a los userIds
       const users = await User.find(
         { _id: { $in: userIds } },
         "username fullname image"
       ).lean();
 
-      // Crear un mapa para mapear userIds a usuarios
       const userMap = {};
       users.forEach((user) => (userMap[user._id] = user));
 
-      // Modificar los comentarios para incluir los datos básicos del usuario
       const commentsWithUserData = post.comments.map((comment) => ({
         content: comment.content,
-        emoji: comment.emoji,
+        emoji: comment.emoji || "none", // Asegurarse de que el emoji está incluido
         createdAt: comment.createdAt,
-        user: userMap[comment.userId], // Agregar los datos básicos del usuario
+        user: userMap[comment.userId],
       }));
 
       response.json(commentsWithUserData);
@@ -53,7 +49,7 @@ class commentController {
 
       const decoded = jwt.verify(token, config.secret);
       const userId = decoded.id;
-      const { content } = request.body;
+      const { content, emoji = "none" } = request.body; // Asegurarse de que el emoji está incluido
 
       if (!content) {
         return response.status(400).json({ error: "Content is required" });
@@ -73,6 +69,7 @@ class commentController {
 
       const comment = {
         content,
+        emoji,
         userId,
       };
 
