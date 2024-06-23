@@ -24,17 +24,32 @@ const upload = multer({ storage: storage });
 class PostController {
   // Todo: Post Actions
   static async read(request, response) {
-    //* Read resources
-    PostModel.find({})
-      .then((posts) => {
-        response.json(posts);
-      })
-      .catch((error) => {
-        response
-          .status(500)
-          .json({ Error: "Failed to read resources", Details: error });
+    try {
+      const posts = await PostModel.find({}).lean();
+
+      const userIds = posts.map((post) => post.userId);
+
+      const users = await User.find(
+        { _id: { $in: userIds } },
+        "username fullname image"
+      ).lean();
+
+      const userMap = {};
+      users.forEach((user) => (userMap[user._id] = user));
+
+      posts.forEach((post) => {
+        post.user = userMap[post.userId];
+        delete post.userId;
       });
+
+      response.json(posts);
+    } catch (error) {
+      response
+        .status(500)
+        .json({ Error: "Failed to read resources", Details: error });
+    }
   }
+
   static async readUnique(request, response) {
     //* Read unique resource
     const { id } = request.params;
@@ -66,6 +81,8 @@ class PostController {
     if (!user) {
       return response.status(401).json({ error: "User not found" });
     }
+
+    console.log(user);
     //* Create resources with image upload
     const postData = {
       userId: userId,
@@ -93,7 +110,6 @@ class PostController {
       await post.save().then(() => {
         response.status(201).json(post);
       });
-        
     } catch (error) {
       return response.status(500).json({ error: "Internal Server Error" });
     }

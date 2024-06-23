@@ -1,104 +1,110 @@
 import PostModel from "../../models/Post.js";
-import jwt from 'jsonwebtoken';
-import User from '../../models/User.js';
-import config from '../../config.js'
+import jwt from "jsonwebtoken";
+import User from "../../models/User.js";
+import config from "../../config.js";
 
-
-// Todo: Comments Actions
 class commentController {
   static async read(request, response) {
-    const { postId } = request.params;
-
-    const post = await PostModel.findById(postId);
-    response.json(post.comments);
-  }
-  static async create(request, response) {
-
-    console.log('Creating... Comment');
-
-    const token = request.headers['x-access-token'];
-    const decoded = jwt.verify(token, config.secret);
-    const userId = decoded.id;
-    const content = request.body.content;
-
-    const { postId } = request.params;
-    const comment = {
-      content,
-      userId,
-    };
-
-    //* verify user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return response
-        .status(404)
-        .json({ Error: "User not found", Details: error });
-    }
-    //* verify post exists
-    const post = await PostModel.findById(postId);
-    if (!post) {
-      return response
-        .status(404)
-        .json({ Error: "Post not found", Details: error });
-    }
-
-    //* Create Resource "Like" for this update in the collection Post in field Likes
-
     try {
-      const post = await PostModel.findById(postId);
-      post.comments.push(comment);
-      await post.save();
-      response.json({ Message: "Resource created successfully", comment });
+      const { postId } = request.params;
+      const post = await PostModel.findById(postId).select("comments");
+
+      if (!post) {
+        return response.status(404).json({ error: "Post not found" });
+      }
+
+      response.json(post.comments);
     } catch (error) {
       response
         .status(500)
-        .json({ Error: "Failed to create resource", Details: error });
+        .json({ error: "Failed to retrieve comments", details: error.message });
     }
   }
-  static async delete(request, response) {
-    const token = req.headers['x-access-token'];
-    const decoded = jwt.verify(token, config.secret);
-    const userId = decoded.id;
-    const { postId } = request.params;
-    const { id } = request.params;
 
-    //* verify user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return response
-        .status(404)
-        .json({ Error: "User not found", Details: error });
-    }
-    //* verify post exists
-    const post = await PostModel.findById(postId);
-    if (!post) {
-      return response
-        .status(404)
-        .json({ Error: "Post not found", Details: error });
-    }
-    //* Check if user is authorized
-    if (posst.user.id !== userId || user.role !== 'admin' && user.role !== 'moderator') {
-      return response
-        .status(401)
-        .json({ Error: "Unauthorized", Details: error });
-    }
-
-
-    //! Delete resource
+  static async create(request, response) {
     try {
+      console.log("Creating... Comment");
+
+      const token = request.headers["x-access-token"];
+      if (!token) {
+        return response.status(401).json({ error: "No token provided" });
+      }
+
+      const decoded = jwt.verify(token, config.secret);
+      const userId = decoded.id;
+      const { content } = request.body;
+
+      if (!content) {
+        return response.status(400).json({ error: "Content is required" });
+      }
+
+      const { postId } = request.params;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return response.status(404).json({ error: "User not found" });
+      }
+
       const post = await PostModel.findById(postId);
-      const deleteComment = post.comments.find((comment) => comment.id === id);
-      post.comments = post.comments.filter((comment) => comment.id !== id);
+      if (!post) {
+        return response.status(404).json({ error: "Post not found" });
+      }
+
+      const comment = {
+        content,
+        userId,
+      };
+
+      post.comments.push(comment);
       await post.save();
-      response.json({
-        Message: "Resource deleted successfully",
-        resource: deleteComment,
-      });
+      response.json({ message: "Comment created successfully", comment });
     } catch (error) {
-      response.status(500).json({
-        Error: "Failed create resource",
-        Datails: error,
-      });
+      response
+        .status(500)
+        .json({ error: "Failed to create comment", details: error.message });
+    }
+  }
+
+  static async delete(request, response) {
+    try {
+      const token = request.headers["x-access-token"];
+      if (!token) {
+        return response.status(401).json({ error: "No token provided" });
+      }
+
+      const decoded = jwt.verify(token, config.secret);
+      const userId = decoded.id;
+      const { postId, id: commentId } = request.params;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return response.status(404).json({ error: "User not found" });
+      }
+
+      const post = await PostModel.findById(postId);
+      if (!post) {
+        return response.status(404).json({ error: "Post not found" });
+      }
+
+      const comment = post.comments.id(commentId);
+      if (!comment) {
+        return response.status(404).json({ error: "Comment not found" });
+      }
+
+      if (
+        comment.userId.toString() !== userId &&
+        !["admin", "moderator"].includes(user.role)
+      ) {
+        return response.status(403).json({ error: "Unauthorized" });
+      }
+
+      comment.remove();
+      await post.save();
+      response.json({ message: "Comment deleted successfully", comment });
+    } catch (error) {
+      response
+        .status(500)
+        .json({ error: "Failed to delete comment", details: error.message });
     }
   }
 }
