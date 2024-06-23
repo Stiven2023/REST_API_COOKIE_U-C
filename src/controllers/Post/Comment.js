@@ -29,6 +29,8 @@ class commentController {
       // Modificar los comentarios para incluir los datos básicos del usuario
       const commentsWithUserData = post.comments.map((comment) => ({
         content: comment.content,
+        emoji: comment.emoji,
+        createdAt: comment.createdAt,
         user: userMap[comment.userId], // Agregar los datos básicos del usuario
       }));
 

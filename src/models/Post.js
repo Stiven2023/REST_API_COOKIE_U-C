@@ -1,6 +1,36 @@
 import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
+
+const commentSchema = new Schema({
+  content: {
+    type: String,
+    required: true,
+  },
+  emoji: {
+    type: String,
+    required: false,
+  },
+  userId: {
+    type: Schema.Types.ObjectId,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const likeSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const postSchema = new Schema(
   {
     content: {
@@ -19,29 +49,8 @@ const postSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
     },
-    likes: [
-      {
-        userId: {
-          type: Schema.Types.ObjectId,
-        },
-      },
-    ],
-    comments: [
-      {
-        content: {
-          type: String,
-          required: true,
-        },
-        emoji: {
-          type: String,
-          required: false,
-        },
-        userId: {
-          type: Schema.Types.ObjectId,
-          required: true,
-        },
-      },
-    ],
+    likes: [likeSchema],
+    comments: [commentSchema],
   },
   {
     timestamps: true,
