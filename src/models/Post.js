@@ -16,13 +16,13 @@ const postSchema = new Schema(
       required: false,
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
       required: true,
     },
     likes: [
       {
         userId: {
-          type: String,
+          type: Schema.Types.ObjectId,
         },
       },
     ],

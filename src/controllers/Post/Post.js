@@ -1,4 +1,3 @@
-import { PostSchemaZod } from "../../ZodSchemes/PostSchema.js";
 import PostModel from "../../models/Post.js";
 import multer from "multer";
 import path from "path";
