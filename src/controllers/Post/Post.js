@@ -105,6 +105,8 @@ class PostController {
         post.mediaUrl = null;
       }
 
+      user.posts.push(post._id);
+      await user.save();
       console.log(post);
 
       user.posts.push(post._id);
