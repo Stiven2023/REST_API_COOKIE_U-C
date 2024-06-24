@@ -108,10 +108,7 @@ class PostController {
       user.posts.push(post._id);
       await user.save();
       console.log(post);
-
-      user.posts.push(post._id);
-      await user.save();
-
+      
       await post.save()
 
       response.status(201).json(post);
