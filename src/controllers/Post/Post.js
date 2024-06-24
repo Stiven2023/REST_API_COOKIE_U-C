@@ -107,9 +107,12 @@ class PostController {
 
       console.log(post);
 
-      await post.save().then(() => {
-        response.status(201).json(post);
-      });
+      user.posts.push(post._id);
+      await user.save();
+
+      await post.save()
+
+      response.status(201).json(post);
     } catch (error) {
       return response.status(500).json({ error: "Internal Server Error" });
     }
