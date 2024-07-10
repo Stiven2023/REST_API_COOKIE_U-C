@@ -8,7 +8,6 @@ const MessageSchema = new Schema({
  },
  content: [{
   type: String,
-  required: true
  }],
  mediaUrl: {
   public_id: String,
