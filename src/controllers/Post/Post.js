@@ -307,22 +307,26 @@ class PostController {
       return response.status(401).json({ error: "User not found" });
     }
 
+    // ! Buscar la publicación por ID
+    const post = await PostModel.findById(id);
+
+    // ! Verificar si la publicación existe
+    if (!post) {
+      return response.status(404).json({ error: "Post not found" });
+    }
+
+    // ! Verificar si el usuario es el propietario de la publicación o el administrador o el moderador
+    if (
+      post.userId.toString() !== userId &&
+      user.role !== "admin" &&
+      user.role !== "moderator"
+    ) {
+      return response
+        .status(403)
+        .json({ error: "You are not authorized to delete this post" });
+    }
+
     try {
-      // ! Buscar la publicación por ID
-      const post = await PostModel.findById(id);
-
-      // ! Verificar si la publicación existe
-      if (!post) {
-        return response.status(404).json({ error: "Post not found" });
-      }
-
-      // ! Verificar si el usuario está autorizado para eliminar la publicación
-      if (
-        post.userId !== userId &&
-        !(user.role === "admin" || user.role === "moderator")
-      ) {
-        return response.status(401).json({ error: "Unauthorized" });
-      }
 
       // * Eliminar la publicación y devolver un mensaje de éxito
       PostModel.findByIdAndDelete(id)
