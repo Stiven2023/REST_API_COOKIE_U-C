@@ -7,7 +7,8 @@ const likeRoutes = Router();
 //   response.json([{ message: "Welcome to Likes" }]);
 // });
 
-likeRoutes.get("/:postId/likes", LikesController.read); //* read the likes
+likeRoutes.get("/:postId/likes", LikesController.getAll); //* read the likes
+likeRoutes.get("/:postId/mylikes", LikesController.getMyLikePosts); //* read my likes
 likeRoutes.post("/:postId/likes", LikesController.create); //* create a like
 likeRoutes.delete("/:postId/likes/:id", LikesController.delete); //* Delete a like
 
