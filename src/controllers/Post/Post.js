@@ -106,7 +106,7 @@ class PostController {
         return response.status(401).json({ error: "No token provided" });
       }
 
-      const user = User.findById(userId);
+      const user = await User.findById(userId);
 
       // ? Verificar si el usuario existe
       if (!user) {
@@ -114,6 +114,7 @@ class PostController {
       }
 
       const myPosts = user.posts;
+      console.log(user.posts);
       response.json(myPosts);
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
@@ -276,8 +277,9 @@ class PostController {
       }
 
       // * Agregar la publicación al usuario y guardar ambos
-      user.posts.push(post._id);
+      user.posts.push(post);
       await user.save();
+      console.log(user.posts);
       await post.save();
 
       // * Devolver la publicación creada
