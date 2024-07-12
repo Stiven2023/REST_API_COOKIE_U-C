@@ -136,12 +136,12 @@ class PostController {
         return response.status(401).json({ error: "No token provided" });
       }
 
-      const user = User.findById(userId); 
+      const user = await User.findById(userId);
 
       // ? Verificar si el usuario existe
       if (!user) {
         return response.status(401).json({ error: "User not found" });
-      } 
+      }
 
       const mySavedPosts = user.savedPosts;
 
@@ -168,9 +168,9 @@ class PostController {
     const user = await User.findById(userId);
 
     // ? Verificar si el usuario existe
-    if (!user) {  
+    if (!user) {
       return response.status(401).json({ error: "User not found" });
-    } 
+    }
 
     const post = await PostModel.findById(postId);
 
@@ -178,7 +178,7 @@ class PostController {
     if (!post) {
       return response.status(404).json({ error: "Post not found" });
     }
-    
+
     // ? Verificar si el usuario ya ha guardado la publicación
     if (user.savedPosts.includes(post)) {
       return response.status(409).json({ error: "Post already saved" });
@@ -187,15 +187,12 @@ class PostController {
       user.savedPosts.push(post);
       await user.save();
       response.json({ message: "Post saved successfully" });
-      
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
       response
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
-      
     }
-
   }
   // * Método para eliminar una publicación guardada
   static async deleteSavedPost(request, response) {
@@ -223,10 +220,6 @@ class PostController {
       return response.status(404).json({ error: "Post not found" });
     }
 
-    // ? Verificar si el usuario ya ha guardado la publicación
-    if (!user.savedPosts.includes(post)) {
-      return response.status(409).json({ error: "Post not saved" });
-    }
     try {
       user.savedPosts.pull(post);
       await user.save();
@@ -327,7 +320,6 @@ class PostController {
     }
 
     try {
-
       // * Eliminar la publicación y devolver un mensaje de éxito
       PostModel.findByIdAndDelete(id)
         .then(() => {
