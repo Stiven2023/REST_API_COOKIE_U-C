@@ -22,6 +22,9 @@ import jwt from "jsonwebtoken";
 // * Importar la función de carga de imágenes desde cloudinary
 import { uploadImage } from "../../cloudinary.js";
 
+// * Importar la librería de fechas
+import moment from "moment";
+
 // * Configurar el almacenamiento de multer en disco
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -40,8 +43,14 @@ const upload = multer({ storage: storage });
 
 // * Definir la clase PostController para manejar las publicaciones
 class PostController {
-  // * Método para obtener todas las publicaciones
-  static async getAll(request, response) {
+  /**
+   * @method getAll
+   * @description Obtiene todas las publicaciones con la información del usuario.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de publicaciones con detalles del usuario
+   */
+  static async getAll(req, res) {
     try {
       // ! Leer todas las publicaciones de la base de datos
       const posts = await PostModel.find({}).lean();
@@ -59,324 +68,488 @@ class PostController {
       const userMap = {};
       users.forEach((user) => (userMap[user._id] = user));
 
-      // ! Asignar cada publicación a su respectivo usuario y eliminar el campo userId
+      // ! Asignar cada publicación a su respectivo usuario
       posts.forEach((post) => {
-        post.user = userMap[post.userId];
-        delete post.userId;
+        post.user = userMap[post.userId] || {}; // Añadir usuario si existe
       });
 
       // * Devolver las publicaciones con la información de usuario
-      response.json(posts);
+      res.json(posts);
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
     }
   }
 
-  // * Método para obtener una publicación por ID
-  static async getById(request, response) {
-    // ? Leer un recurso único
-    const { id } = request.params;
-    PostModel.findById(id)
-      .then((post) => {
-        if (post) {
-          response.json(post);
-        } else {
-          response.status(404).json({ Error: "Resource not found" });
-        }
-      })
-      .catch((error) => {
-        response
-          .status(500)
-          .json({ Error: "Failed to read unique resource", Details: error });
-      });
-  }
-  // * Método para obtener mis publicaciones
-  static async getMyPosts(request, response) {
+  /**
+   * @method getById
+   * @description Obtiene una publicación específica por ID.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Información de la publicación
+   */
+  static async getById(req, res) {
     try {
-      // ? Obtener mis publicaciones
-      const token = request.headers["x-access-token"];
+      const { id } = req.params;
+      const post = await PostModel.findById(id).lean();
+      if (post) {
+        res.json(post);
+      } else {
+        res.status(404).json({ Error: "Resource not found" });
+      }
+    } catch (error) {
+      res
+        .status(500)
+        .json({ Error: "Failed to read unique resource", Details: error });
+    }
+  }
+
+  /**
+   * @method getMyPosts
+   * @description Obtiene todas las publicaciones del usuario autenticado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de publicaciones del usuario
+   */
+  static async getMyPosts(req, res) {
+    try {
+      const token = req.headers["x-access-token"];
       const decoded = jwt.verify(token, config.secret);
       const userId = decoded.id;
 
-      // ? verificar si hay un token
       if (!token) {
-        return response.status(401).json({ error: "No token provided" });
+        return res.status(401).json({ error: "No token provided" });
       }
 
       const user = await User.findById(userId);
 
-      // ? Verificar si el usuario existe
       if (!user) {
-        return response.status(401).json({ error: "User not found" });
+        return res.status(401).json({ error: "User not found" });
       }
 
       const myPosts = user.posts;
-      console.log(user.posts);
-      response.json(myPosts);
+      res.json(myPosts);
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
     }
   }
 
-  static async getMySavedPosts(request, response) {
+  /**
+   * @method getMySavedPosts
+   * @description Obtiene todas las publicaciones guardadas del usuario autenticado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de publicaciones guardadas del usuario
+   */
+  static async getMySavedPosts(req, res) {
     try {
-      // ? Obtener mis publicaciones
-      const token = request.headers["x-access-token"];
+      const token = req.headers["x-access-token"];
       const decoded = jwt.verify(token, config.secret);
       const userId = decoded.id;
 
-      // ? verificar si hay un token
       if (!token) {
-        return response.status(401).json({ error: "No token provided" });
+        return res.status(401).json({ error: "No token provided" });
       }
 
       const user = await User.findById(userId);
 
-      // ? Verificar si el usuario existe
       if (!user) {
-        return response.status(401).json({ error: "User not found" });
+        return res.status(401).json({ error: "User not found" });
       }
 
       const mySavedPosts = user.savedPosts;
-
-      response.json(mySavedPosts);
+      res.json(mySavedPosts);
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
     }
   }
-  // * Método para agregar a save una publicación
-  static async savePost(request, response) {
-    const { postId } = request.params;
-    const token = request.headers["x-access-token"];
+
+  /**
+   * @method savePost
+   * @description Guarda una publicación en la lista de publicaciones guardadas del usuario autenticado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de éxito o error
+   */
+  static async savePost(req, res) {
+    const { postId } = req.params;
+    const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // ? verificar si hay un token
     if (!token) {
-      return response.status(401).json({ error: "No token provided" });
+      return res.status(401).json({ error: "No token provided" });
     }
 
     const user = await User.findById(userId);
 
-    // ? Verificar si el usuario existe
     if (!user) {
-      return response.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
 
     const post = await PostModel.findById(postId);
 
-    // ? Verificar si la publicación existe
     if (!post) {
-      return response.status(404).json({ error: "Post not found" });
+      return res.status(404).json({ error: "Post not found" });
     }
 
-    // ? Verificar si el usuario ya ha guardado la publicación
-    if (user.savedPosts.includes(post)) {
-      return response.status(409).json({ error: "Post already saved" });
+    if (user.savedPosts.includes(postId)) {
+      return res.status(409).json({ error: "Post already saved" });
     }
+
     try {
-      user.savedPosts.push(post);
+      user.savedPosts.push(postId);
       await user.save();
-      response.json({ message: "Post saved successfully" });
+      res.json({ message: "Post saved successfully" });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
     }
   }
-  // * Método para eliminar una publicación guardada
-  static async deleteSavedPost(request, response) {
-    const { postId } = request.params;
-    const token = request.headers["x-access-token"];
+
+  /**
+   * @method deleteSavedPost
+   * @description Elimina una publicación de la lista de publicaciones guardadas del usuario autenticado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de éxito o error
+   */
+  static async deleteSavedPost(req, res) {
+    const { postId } = req.params;
+    const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // ? verificar si hay un token
     if (!token) {
-      return response.status(401).json({ error: "No token provided" });
+      return res.status(401).json({ error: "No token provided" });
     }
 
     const user = await User.findById(userId);
 
-    // ? Verificar si el usuario existe
     if (!user) {
-      return response.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
 
     const post = await PostModel.findById(postId);
 
-    // ? Verificar si la publicación existe
     if (!post) {
-      return response.status(404).json({ error: "Post not found" });
+      return res.status(404).json({ error: "Post not found" });
     }
 
     try {
-      user.savedPosts.pull(post);
+      user.savedPosts.pull(postId);
       await user.save();
-      response.json({ message: "Post deleted successfully" });
+      res.json({ message: "Post deleted successfully" });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to read resources", Details: error });
     }
   }
-  // * Método para crear una nueva publicación
-  static async create(request, response) {
-    // ! Obtener el token de la cabecera de la solicitud
-    const token = request.headers["x-access-token"];
+
+  /**
+   * @method create
+   * @description Crea una nueva publicación y la asocia al usuario autenticado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Publicación creada o mensaje de error
+   */
+  static async create(req, res) {
+    const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // ! Buscar el usuario por ID
     const user = await User.findById(userId);
 
-    // ! Verificar si el usuario existe
     if (!user) {
-      return response.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
 
-    // * Crear los datos de la publicación
     const postData = {
       userId: userId,
-      content: request.body.content,
+      content: req.body.content,
     };
 
     try {
-      // * Crear una nueva instancia de la publicación
       const post = new PostModel(postData);
 
-      // ? Subir la imagen si existe en la solicitud
-      if (request.files?.image) {
-        const result = await uploadImage(request.files.image.tempFilePath);
+      if (req.files?.image) {
+        const result = await uploadImage(req.files.image.tempFilePath);
         post.mediaUrl = {
           public_id: result.public_id,
           secure_url: result.secure_url,
         };
         post.image = result.secure_url;
-        await fs.unlink(request.files.image.tempFilePath);
+        await fs.unlink(req.files.image.tempFilePath);
       } else {
         post.mediaUrl = null;
       }
 
-      // * Agregar la publicación al usuario y guardar ambos
       user.posts.push(post);
       await user.save();
-      console.log(user.posts);
       await post.save();
 
-      // * Devolver la publicación creada
-      response.status(201).json(post);
+      res.status(201).json(post);
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      return response.status(500).json({ error: "Internal Server Error" });
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 
-  // * Método para eliminar una publicación
-  static async delete(request, response) {
-    const { id } = request.params;
+  /**
+   * @method delete
+   * @description Elimina una publicación si el usuario es el propietario o tiene permisos de administrador o moderador.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de éxito o error
+   */
+  static async delete(req, res) {
+    const { id } = req.params;
 
-    // ! Obtener el token de la cabecera de la solicitud
-    const token = request.headers["x-access-token"];
+    const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // ! Buscar el usuario por ID
     const user = await User.findById(userId);
 
-    // ! Verificar si el usuario existe
     if (!user) {
-      return response.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
 
-    // ! Buscar la publicación por ID
     const post = await PostModel.findById(id);
 
-    // ! Verificar si la publicación existe
     if (!post) {
-      return response.status(404).json({ error: "Post not found" });
+      return res.status(404).json({ error: "Post not found" });
     }
 
-    // ! Verificar si el usuario es el propietario de la publicación o el administrador o el moderador
     if (
       post.userId.toString() !== userId &&
       user.role !== "admin" &&
       user.role !== "moderator"
     ) {
-      return response
+      return res
         .status(403)
         .json({ error: "You are not authorized to delete this post" });
     }
 
     try {
-      // * Eliminar la publicación y devolver un mensaje de éxito
-      PostModel.findByIdAndDelete(id)
-        .then(() => {
-          response.json({ Message: "Resource deleted successfully" });
-        })
-        .catch((error) => {
-          response
-            .status(500)
-            .json({ Error: "Failed to delete resource", Details: error });
-        });
+      await PostModel.findByIdAndDelete(id);
+      res.json({ Message: "Resource deleted successfully" });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
-      response
+      res
         .status(500)
         .json({ Error: "Failed to delete resource", Details: error });
     }
   }
-   // * Método para obtener todos los usuarios y sus publicaciones
-   static async getAllUsersWithPosts(req, res) {
-    try {
-      // Buscar todos los usuarios con datos básicos
-      const users = await User.find({}, 'username fullname image').lean();
 
-      // Buscar los posts de todos los usuarios, incluyendo la información de los comentarios y likes
-      const userIds = users.map(user => user._id);
-      const posts = await PostModel.find({ userId: { $in: userIds } })
+  /**
+   * @method getAllUsersWithPosts
+   * @description Obtiene todos los usuarios con sus publicaciones. Incluye detalles de la publicación como comentarios.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Información detallada de usuarios y sus publicaciones
+   */
+  static async getAllUsersWithPosts(req, res) {
+    try {
+      const users = await User.find({})
         .populate({
-          path: 'comments.userId',
-          select: 'username fullname image',
+          path: "posts",
+          populate: {
+            path: "comments",
+            select: "content emoji userId createdAt",
+          },
         })
         .lean();
 
-      // Crear un mapa de posts por userId
-      const postsMap = {};
-      posts.forEach(post => {
-        if (!postsMap[post.userId]) {
-          postsMap[post.userId] = [];
-        }
-        postsMap[post.userId].push({
-          ...post,
-          comments: post.comments.map(comment => ({
-            ...comment,
-            user: comment.userId,
-          })),
-        });
-      });
-
-      // Añadir los posts a los usuarios
-      const usersWithPosts = users.map(user => ({
-        ...user,
-        posts: postsMap[user._id] || [],
+      const usersWithPosts = users.map((user) => ({
+        id: user._id || null, // ID del usuario
+        username: user.username || "No username", // Nombre de usuario
+        email: user.email || "No email", // Correo electrónico del usuario
+        role: user.role || "No role", // Rol del usuario
+        status: user.status || "No status", // Estado del usuario
+        fullname: user.fullname || "No fullname", // Nombre completo del usuario
+        image: user.image?.secure_url || null, // URL de la imagen del usuario (null si no está disponible)
+        posts: user.posts.map((post) => ({
+          id: post._id || null, // ID de la publicación
+          content: post.content || "No content", // Contenido de la publicación
+          mediaUrl: post.mediaUrl || null, // URL del medio asociado a la publicación (null si no está disponible)
+          image: post.image || null, // Imagen asociada a la publicación (null si no está disponible)
+          comments: post.comments || [], // Comentarios de la publicación
+          createdAt: post.createdAt || "No creation date", // Fecha de creación de la publicación
+        })),
       }));
 
-      // Devolver los datos de los usuarios y sus publicaciones
       res.json(usersWithPosts);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch users and their posts', details: error.message });
+      res
+        .status(500)
+        .json({ Error: "Failed to read resources", Details: error });
+    }
+  }
+
+  /**
+   * @method getPostAnalytics
+   * @description Obtiene datos para generar gráficos específicos sobre los posts de un usuario.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Datos necesarios para gráficos sobre los posts del usuario
+   */
+  static async getPostAnalytics(req, res) {
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, config.secret);
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ Error: "User ID is required" });
+    }
+
+    if (!decoded) {
+      return res.status(401).json({ Error: "Invalid token" });
+    }
+
+    try {
+      // Obtener el usuario y sus posts
+      const user = await User.findById(userId)
+        .populate({
+          path: "posts",
+          populate: {
+            path: "comments",
+            select: "content emoji userId createdAt",
+          },
+        })
+        .lean();
+
+      if (!user) {
+        return res.status(404).json({ Error: "User not found" });
+      }
+
+      const posts = user.posts;
+
+      if (!posts || posts.length === 0) {
+        return res.status(404).json({ Error: "No posts found for this user" });
+      }
+
+      // Gráfico 1: Número de posts por rango de tiempo
+      const postsByMonth = posts.reduce((acc, post) => {
+        const month = moment(post.createdAt).format("YYYY-MM");
+        if (!acc[month]) acc[month] = 0;
+        acc[month]++;
+        return acc;
+      }, {});
+
+      // Gráfico 2: Distribución de comentarios por publicación
+      const commentsDistribution = posts.map((post) => ({
+        postId: post._id,
+        numberOfComments: post.comments.length,
+      }));
+
+      // Gráfico 3: Promedio de comentarios y likes por publicación
+      const commentsAndLikesAverage = posts.reduce(
+        (acc, post) => {
+          acc.totalComments += post.comments.length;
+          acc.totalLikes += post.likes.length; // Asegúrate de que `post.likes` existe en el modelo
+          acc.totalPosts++;
+          return acc;
+        },
+        {
+          totalComments: 0,
+          totalLikes: 0,
+          totalPosts: 0,
+        }
+      );
+
+      if (commentsAndLikesAverage.totalPosts > 0) {
+        commentsAndLikesAverage.averageComments =
+          commentsAndLikesAverage.totalComments /
+          commentsAndLikesAverage.totalPosts;
+        commentsAndLikesAverage.averageLikes =
+          commentsAndLikesAverage.totalLikes /
+          commentsAndLikesAverage.totalPosts;
+      } else {
+        commentsAndLikesAverage.averageComments = 0;
+        commentsAndLikesAverage.averageLikes = 0;
+      }
+
+      // Devolver los datos para los gráficos
+      res.json({
+        postsByMonth,
+        commentsDistribution,
+        commentsAndLikesAverage,
+      });
+    } catch (error) {
+      res.status(500).json({
+        Error: "Failed to retrieve analytics",
+        Details: error.message,
+      });
+    }
+  }
+  /**
+   * @method getPlatformAnalytics
+   * @description Obtiene datos analíticos de toda la plataforma sobre las publicaciones.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Datos analíticos de las publicaciones en la plataforma
+   */
+  static async getPlatformAnalytics(req, res) {
+    try {
+      // Obtener todas las publicaciones
+      const posts = await PostModel.find({}).populate("comments").lean();
+
+      // Calcular el número total de publicaciones por mes
+      const postsByMonth = {};
+      posts.forEach((post) => {
+        const month = moment(post.createdAt).format("YYYY-MM");
+        postsByMonth[month] = (postsByMonth[month] || 0) + 1;
+      });
+
+      // Calcular la distribución de comentarios por publicación
+      const commentsDistribution = posts.map((post) => ({
+        postId: post._id,
+        numberOfComments: post.comments.length,
+      }));
+
+      // Calcular el promedio de comentarios y likes por publicación
+      const totalPosts = posts.length;
+      const totalComments = posts.reduce(
+        (sum, post) => sum + post.comments.length,
+        0
+      );
+
+      // Asegúrate de que 'likes' sea un número y no una cadena o un objeto
+      const totalLikes = posts.reduce(
+        (sum, post) => sum + (Number(post.likes) || 0),
+        0
+      );
+
+      const averageComments = totalPosts > 0 ? totalComments / totalPosts : 0;
+      const averageLikes = totalPosts > 0 ? totalLikes / totalPosts : 0;
+
+      const commentsAndLikesAverage = {
+        totalComments,
+        totalLikes,
+        totalPosts,
+        averageComments,
+        averageLikes,
+      };
+
+      // Devolver los datos analíticos
+      res.json({
+        postsByMonth,
+        commentsDistribution,
+        commentsAndLikesAverage,
+      });
+    } catch (error) {
+      // Manejar errores y devolver un mensaje de error
+      res.status(500).json({
+        Error: "Failed to retrieve platform analytics",
+        Details: error.message,
+      });
     }
   }
 }
