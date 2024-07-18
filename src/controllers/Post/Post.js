@@ -337,6 +337,48 @@ class PostController {
         .json({ Error: "Failed to delete resource", Details: error });
     }
   }
+   // * Método para obtener todos los usuarios y sus publicaciones
+   static async getAllUsersWithPosts(req, res) {
+    try {
+      // Buscar todos los usuarios con datos básicos
+      const users = await User.find({}, 'username fullname image').lean();
+
+      // Buscar los posts de todos los usuarios, incluyendo la información de los comentarios y likes
+      const userIds = users.map(user => user._id);
+      const posts = await PostModel.find({ userId: { $in: userIds } })
+        .populate({
+          path: 'comments.userId',
+          select: 'username fullname image',
+        })
+        .lean();
+
+      // Crear un mapa de posts por userId
+      const postsMap = {};
+      posts.forEach(post => {
+        if (!postsMap[post.userId]) {
+          postsMap[post.userId] = [];
+        }
+        postsMap[post.userId].push({
+          ...post,
+          comments: post.comments.map(comment => ({
+            ...comment,
+            user: comment.userId,
+          })),
+        });
+      });
+
+      // Añadir los posts a los usuarios
+      const usersWithPosts = users.map(user => ({
+        ...user,
+        posts: postsMap[user._id] || [],
+      }));
+
+      // Devolver los datos de los usuarios y sus publicaciones
+      res.json(usersWithPosts);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch users and their posts', details: error.message });
+    }
+  }
 }
 
 // * Exportar el controlador de publicaciones

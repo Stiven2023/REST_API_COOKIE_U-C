@@ -40,6 +40,7 @@ class commentController {
 
       // * Combinar los comentarios con los datos de los usuarios
       const commentsWithUserData = post.comments.map((comment) => ({
+        _id: comment._id,
         content: comment.content,
         emoji: comment.emoji || "none", // * Asegurarse de que el emoji está incluido
         createdAt: comment.createdAt,

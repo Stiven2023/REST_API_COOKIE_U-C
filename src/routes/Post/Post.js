@@ -11,8 +11,11 @@ postRoutes.get("/save", PostController.getMySavedPosts); //* Recover my saved po
 postRoutes.post("/save/:postId", PostController.savePost); //* Save post
 postRoutes.delete("/save/:postId", PostController.deleteSavedPost);
 
+postRoutes.get("/users-with-posts", PostController.getAllUsersWithPosts); //* Recover all users with their posts
+
 postRoutes.post("/", PostController.create); //* Create new post
 postRoutes.get("/:id", PostController.getById); //* Recover unique post
 postRoutes.delete("/:id", PostController.delete); //* Delete a post
+
 
 export default postRoutes;
