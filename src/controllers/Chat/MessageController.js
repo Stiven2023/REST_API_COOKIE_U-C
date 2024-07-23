@@ -162,15 +162,14 @@ const deleteMessage = async (req, res) => {
     await Message.findByIdAndDelete(messageId);
     await Chat.findByIdAndUpdate(chatId, { $pull: { messages: messageId } });
 
-    //Add emit delete message
-
-    io.emit('messageDeleted', messageId);
+    // Emit the delete message event to the specific chat room
+    io.to(chatId).emit('messageDeleted', messageId);
 
     res.json({ message: 'Message deleted successfully' });
   } catch (error) {
     console.error("Error deleting message:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export { createMessage, updateMessage, deleteMessage, getAllMessages, getMessageById }
