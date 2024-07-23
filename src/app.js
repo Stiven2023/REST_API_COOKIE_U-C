@@ -24,7 +24,7 @@ createRoles();
 // Configura CORS para permitir cualquier origen
 app.use(
   cors({
-    origin: "*",
+    origin: "https://cookie-front-lixsr7-snaider-arss-projects.vercel.app",
   })
 );
 
