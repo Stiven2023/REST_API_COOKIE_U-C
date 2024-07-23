@@ -162,6 +162,8 @@ const deleteMessage = async (req, res) => {
     await Message.findByIdAndDelete(messageId);
     await Chat.findByIdAndUpdate(chatId, { $pull: { messages: messageId } });
 
+    io.emit('messageDeleted', messageId);
+
     res.json({ message: 'Message deleted successfully' });
   } catch (error) {
     console.error("Error deleting message:", error);
