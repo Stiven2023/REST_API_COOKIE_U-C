@@ -162,6 +162,8 @@ const deleteMessage = async (req, res) => {
     await Message.findByIdAndDelete(messageId);
     await Chat.findByIdAndUpdate(chatId, { $pull: { messages: messageId } });
 
+    //Add emit delete message
+
     io.emit('messageDeleted', messageId);
 
     res.json({ message: 'Message deleted successfully' });
