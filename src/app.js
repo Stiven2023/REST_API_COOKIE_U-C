@@ -21,7 +21,23 @@ connectDB();
 const app = express();
 createRoles();
 
-app.use(cors());
+const allowedOrigins = [
+
+  'http://localhost:3000',
+  'https://cookie-front-lixsr7-snaider-arss-projects.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    //?  Permite solicitudes sin origen (por ejemplo, móviles, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
 
 app.use(express.json());
 app.use(morgan('dev'));
