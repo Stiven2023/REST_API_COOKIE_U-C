@@ -144,13 +144,6 @@ class commentController {
         return response.status(404).json({ error: "Comment not found" });
       }
 
-      // ? Verificar que el usuario tenga permiso para eliminar el comentario
-      if (
-        comment.userId.toString() !== userId &&
-        !["admin", "moderator"].includes(user.role)
-      ) {
-        return response.status(403).json({ error: "Unauthorized" });
-      }
 
       // * Eliminar el comentario y guardar la publicación
       comment.remove();
