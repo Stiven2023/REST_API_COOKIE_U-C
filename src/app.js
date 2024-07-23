@@ -3,6 +3,7 @@ import morgan from "morgan";
 import fileUpload from "express-fileupload";
 import cors from "cors";
 import connectDB from "./database.js";
+
 import { createRoles } from "./libs/initialSetup.js";
 
 import authRoutes from "./routes/user/auth.routes.js";
@@ -20,7 +21,13 @@ const app = express();
 createRoles();
 
 // Configura CORS para permitir cualquier origen
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: "Content-Type, Authorization",
+  })
+);
 
 app.use(express.json());
 app.use(morgan("dev"));
