@@ -22,11 +22,7 @@ const app = express();
 createRoles();
 
 // Configura CORS para permitir cualquier origen
-app.use(
-  cors({
-    origin: "https://cookie-front-lixsr7-snaider-arss-projects.vercel.app",
-  })
-);
+app.use(cors());
 
 app.use(express.json());
 app.use(morgan("dev"));
