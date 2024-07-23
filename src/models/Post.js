@@ -46,6 +46,10 @@ const postSchema = new Schema(
       type: String,
       required: false,
     },
+    asybilityImage: {
+      type: String,
+      required: false,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       required: true,
