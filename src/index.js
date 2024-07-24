@@ -1,29 +1,30 @@
 import http from "http";
-import { Server as SocketServer } from 'socket.io';
-import app from './app.js';
+import { Server as SocketServer } from "socket.io";
+import app from "./app.js";
 
 const PORT = 3001;
 
 const server = http.createServer(app);
 
+// Configuración de CORS para Socket.io
 export const io = new SocketServer(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*", 
     methods: ["GET", "POST"],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
-io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
 
-  socket.on('joinRoom', (roomId) => {
+  socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
   });
 });
 
