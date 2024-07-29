@@ -6,14 +6,6 @@ import app from "./app.js";
 
 const PORT = 3001;
 
-// Configuración de CORS para Express
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
 
 const server = http.createServer(app);
 
