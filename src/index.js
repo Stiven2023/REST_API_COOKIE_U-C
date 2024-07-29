@@ -1,15 +1,12 @@
-import express from "express";
-import cors from "cors";
 import http from "http";
 import { Server as SocketServer } from "socket.io";
 import app from "./app.js";
 
 const PORT = 3001;
 
-
 const server = http.createServer(app);
 
-// Configuración de CORS para Socket.io
+// CORS configuration for Socket.io
 export const io = new SocketServer(server, {
   cors: {
     origin: "*",
@@ -32,5 +29,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

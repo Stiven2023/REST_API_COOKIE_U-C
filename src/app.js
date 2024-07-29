@@ -20,7 +20,7 @@ connectDB();
 
 const app = express();
 
-// app.use(cors());
+app.use(cors()); //? Enable CORS for all routes
 
 createRoles();
 
@@ -34,7 +34,6 @@ app.use(
   })
 );
 
-// Rutas
 app.get("/", (req, res) => {
   res.json({
     message: "API is running",
