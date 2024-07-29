@@ -23,7 +23,7 @@ createRoles();
 // Configura CORS para permitir cualquier origen
 app.use(
   cors({
-    origin: "*", // Permite cualquier origen
+    origin: "*", 
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: "Content-Type, Authorization",
   })

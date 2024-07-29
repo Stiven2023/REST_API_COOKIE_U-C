@@ -9,7 +9,7 @@ const server = http.createServer(app);
 // Configuración de CORS para Socket.io
 export const io = new SocketServer(server, {
   cors: {
-    origin: "*", // Permite cualquier origen
+    origin: "*", 
     methods: ["GET", "POST"],
     credentials: true,
   },
