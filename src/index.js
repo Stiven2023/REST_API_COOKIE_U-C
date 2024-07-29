@@ -1,15 +1,26 @@
+import express from "express";
+import cors from "cors";
 import http from "http";
 import { Server as SocketServer } from "socket.io";
 import app from "./app.js";
 
 const PORT = 3001;
 
+// Configuración de CORS para Express
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
 const server = http.createServer(app);
 
 // Configuración de CORS para Socket.io
 export const io = new SocketServer(server, {
   cors: {
-    origin: "*", 
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
