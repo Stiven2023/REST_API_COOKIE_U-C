@@ -36,7 +36,7 @@ const postSchema = new Schema(
   {
     content: {
       type: String,
-      required: true,
+      required: false,
     },
     mediaUrl: {
       public_id: String,

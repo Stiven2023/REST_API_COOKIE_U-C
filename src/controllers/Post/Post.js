@@ -271,6 +271,9 @@ class PostController {
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
+    if (!req.body.content && !req.files?.image) {
+      return res.status(400).json({ error: "Content and image are required" });
+    }
 
     const postData = {
       userId: userId,
