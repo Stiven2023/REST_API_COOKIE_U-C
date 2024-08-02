@@ -4,7 +4,7 @@ import config from "../../config.js";
 import { uploadImage } from "../../cloudinary.js";
 import sendChangePasswordEmail from "../../utils/emails/changePasswordEmail.js";
 import fs from "fs-extra";
-import io from '../../index.js';
+import { io } from '../../index.js';
 
 const getProfile = async (req, res) => {
   try {
