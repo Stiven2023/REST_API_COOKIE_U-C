@@ -1,21 +1,5 @@
 import express from 'express';
-import {
-    getAllUsers,
-    getFollowers,
-    getFollowing,
-    getFriends,
-    getUsersById,
-    getUsersByUsername,
-    searchUsers,
-    deleteUser,
-    updateStatus,
-    updateUser,
-    followUser,
-    unfollowUser,
-    addFriend,
-    removeFriend,
-    changeRole, createUser
-  } from '../../controllers/User/user.controller.js';
+import {getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole } from '../../controllers/User/user.controller.js';
 import { verifyToken, isUser, isAdmin, isModeratorOrAdmin } from '../../middlewares/authJwt.js';
 
 const router = express.Router();
@@ -41,7 +25,5 @@ router.post('/addFriend/:userId', [verifyToken, isUser], addFriend)
 router.post('/removeFriend/:userId', [verifyToken, isUser], removeFriend)
 router.get('/friends/:userId', [verifyToken, isUser], getFriends)
 router.post('/search', [verifyToken, isUser], searchUsers)
-
-router.post('/test', createUser)
 
 export default router;
