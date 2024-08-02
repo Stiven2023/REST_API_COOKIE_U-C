@@ -1,7 +1,6 @@
 import logsLogin from '../../models/LogsLogin.js';
 import user from '../../models/User.js';
 import post from '../../models/Post.js'
-import io from 'socket.io';
 
 const getAllLogins = async (req, res) => {
   try {
