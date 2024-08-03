@@ -304,10 +304,13 @@ const removeFriend = async (req, res) => {
 
 const getFriends = async (req, res) => {
   try {
-    const users = await User.findById(req.params.userId);
+    const token = req.headers["x-access-token"];
+    const decoded = Jwt.verify(token, config.secret);
 
-    io.emit('userUpdate', users);
-    res.json(users.friends);
+    const { userId } = req.params;
+		const user = await User.findById(userId).populate('friends');
+
+    res.json(user.friends);
   } catch (error) {
     res.status(500).json({ error: "Error fetching friends" });
   }
