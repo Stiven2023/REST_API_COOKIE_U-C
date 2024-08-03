@@ -72,7 +72,7 @@ const getAllUsers = async (req, res) => {
 const getUsersById = async (req, res) => {
   try {
     const { userId } = req.params
-    const user = await User.findById(userId).populate('role').populate('following').populate('followers').populate('friends').populate('posts');
+    const user = await User.findById(userId).populate('role').populate('following').populate('followers').populate('friends').populate('posts').populate('posts').populate('savedPosts').populate('likes');
 
     res.json(user);
   } catch (error) {
