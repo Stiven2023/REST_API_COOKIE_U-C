@@ -155,7 +155,7 @@ class PostController {
         return res.status(401).json({ error: "No token provided" });
       }
 
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).populate('savedPosts');
 
       if (!user) {
         return res.status(401).json({ error: "User not found" });
