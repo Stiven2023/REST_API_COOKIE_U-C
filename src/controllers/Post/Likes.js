@@ -30,7 +30,7 @@ class LikeController {
       return response.status(401).json({ error: "No token provided" });
     } 
 
-    const user = User.findById(userId);
+    const user = User.findById(userId).populate('likes');
     
     //* Verifica si el usuario existe
     if (!user) {
