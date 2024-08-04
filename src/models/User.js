@@ -33,10 +33,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    // avatar: {
-    //     type: String,
-    //     default: 'https://freesvg.org/img/abstract-user-flat-4.png'
-    // },
     image: {
         public_id: String,
         secure_url: String
@@ -61,6 +57,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    verified: {
+        type: Boolean,
+        default: false
+    },
     chats: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Chat'
@@ -77,17 +77,14 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    // ? Posts del usuario
     posts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
     }],
-    // ? Posts a los que el usuario le dio like
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
     }],
-    // ? Posts que el usuario ha guardado
     savedPosts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
