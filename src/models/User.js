@@ -50,9 +50,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    // address: {
-    //     type: String
-    // },
+    notifications: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification'
+    }],
     description: {
         type: String,
         default: ''
@@ -80,6 +81,10 @@ const userSchema = new mongoose.Schema({
     posts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
+    }],
+    storys: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Story'
     }],
     likes: [{
         type: mongoose.Schema.Types.ObjectId,

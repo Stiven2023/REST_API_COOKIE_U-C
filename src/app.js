@@ -13,6 +13,7 @@ import messageRoutes from "./routes/chat/MessageRoutes.js";
 import postRoutes from "./routes/Post/Post.js";
 import commentRoutes from "./routes/Post/Comments.js";
 import likeRoutes from "./routes/Post/Likes.js";
+import storyRoutes from "./routes/user/story.routes.js";
 
 import cors from "cors";
 
@@ -43,6 +44,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/stories", storyRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/chat/messages", messageRoutes);
 app.use("/api/posts", postRoutes);
