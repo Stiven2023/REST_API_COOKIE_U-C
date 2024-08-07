@@ -45,35 +45,41 @@ class LikeController {
   // * Método para crear un nuevo like
   static async create(request, response) {
     const token = request.headers["x-access-token"];
-    const decoded = jwt.verify(token, config.secret);
-    const userId = decoded.id;
-
-    const { postId } = request.params;
-    const like = {
-      userId: userId,
-    };
+    if (!token) {
+      return response.status(401).json({ Error: "No token provided" });
+    }
 
     try {
-      const post = await PostModel.findById(postId);
+      const decoded = jwt.verify(token, config.secret);
+      const userId = decoded.id;
+      const { postId } = request.params;
 
-      // ? Verifica si el usuario ya ha dado like al post
-      const validateLike = post.likes.find((like) =>
+      const post = await PostModel.findById(postId);
+      if (!post) {
+        return response.status(404).json({ Error: "Post not found" });
+      }
+
+      // Verifica si el usuario ya ha dado like al post
+      const alreadyLiked = post.likes.some((like) =>
         like.userId.equals(userId)
       );
-      if (validateLike) {
+      if (alreadyLiked) {
         return response
           .status(400)
           .json({ Error: "You have already liked this post" });
       }
 
-      // * Agregar el like a la publicación y guardar
-      const newLike = { _id: new mongoose.Types.ObjectId(), ...like }; // Genera un nuevo ID para el like
+      // Agrega el like a la publicación y guarda
+      const newLike = { _id: new mongoose.Types.ObjectId(), userId: userId };
       post.likes.push(newLike);
       await post.save();
 
-      // * Guardar el like también en el usuario correspondiente
+      // Guarda el like también en el usuario correspondiente
       const user = await User.findById(userId);
-      user.likes.push(post._id);
+      if (!user) {
+        return response.status(404).json({ Error: "User not found" });
+      }
+      user.likes.push(postId);
       await user.save();
 
       response.json({
@@ -81,7 +87,6 @@ class LikeController {
         like: newLike,
       });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
       response
         .status(500)
         .json({ Error: "Failed to create resource", Details: error });
