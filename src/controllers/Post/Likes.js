@@ -33,8 +33,8 @@ class LikeController {
       return response.status(401).json({ error: "No token provided" });
     }
 
-    const user = await User.findById(userId).populate('likes');
-    
+    const user = await User.findById(userId).populate("likes");
+
     //* Verifica si el usuario existe
     if (!user) {
       return response.status(401).json({ error: "User not found" });
@@ -92,41 +92,50 @@ class LikeController {
 
   // * Método para eliminar un like
   static async delete(request, response) {
-    const { id } = request.params;
-    const { postId } = request.params;
+    const { id } = request.params; // ID del like
+    const { postId } = request.params; // ID del post
 
     try {
+      // Buscar la publicación por ID
       const post = await PostModel.findById(postId);
+      if (!post) {
+        return response.status(404).json({ Error: "Post not found" });
+      }
 
-      // ? Verifica si el like existe en el post
-      const deleteLike = post.likes.id(id);
-      if (!deleteLike) {
+      // Verificar si el like existe en el post
+      const likeIndex = post.likes.findIndex(
+        (like) => like._id.toString() === id
+      );
+      if (likeIndex === -1) {
         return response
           .status(404)
           .json({ Error: "Like not found in the post" });
       }
 
-      // * Eliminar el like de la publicación y guardar
-      post.likes.id(id).remove();
+      // Eliminar el like de la publicación
+      const likeToDelete = post.likes[likeIndex];
+      post.likes.splice(likeIndex, 1);
       await post.save();
 
-      // * Eliminar el like del usuario correspondiente
-      const user = await User.findById(deleteLike.userId);
-      user.likes = user.likes.filter((postId) => !postId.equals(post._id));
-      await user.save();
+      // Eliminar el like del usuario correspondiente
+      const user = await User.findById(likeToDelete.userId);
+      if (user) {
+        user.likes = user.likes.filter((postId) => !postId.equals(post._id));
+        await user.save();
+      }
 
       // Emitir evento de like eliminado
       io.emit("like:delete", { postId, likeId: id });
 
       response.json({
         Message: "Resource deleted successfully",
-        like: deleteLike,
+        like: likeToDelete,
       });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
+      console.error("Error deleting like:", error); // Agregar logs para depuración
       response.status(500).json({
         Error: "Failed to delete resource",
-        Details: error,
+        Details: error.message,
       });
     }
   }
