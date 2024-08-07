@@ -7,7 +7,7 @@ import Jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
 import { uploadImage } from "../../cloudinary.js";
 
-const getAllStories = async (req, res) => { // Obtiene todas las historias de los usuarios que sigues o tienes como amigos ✅
+const getAllStories = async (req, res) => { // Obtiene todas las historias de los usuarios que sigues o tienes como amigos
  try {
   const token = req.headers['x-access-token'];
   const decoded = Jwt.verify(token, config.secret);
@@ -37,14 +37,6 @@ const getStoryById = async (req, res) => { // Obtiene una historia específica p
   const user = await User.findById(userId);
 
   const story = await Story.findById(storyId);
-
-  if (story) {
-   if (!user.following.includes(story.userId.toString()) && !user.friends.includes(story.userId.toString())) {
-    return res.status(403).json({ error: 'User is not authorized to view this story' });
-   }
-  } else {
-   return res.status(404).json({ error: 'Story not found' });
-  }
 
   res.json(story);
 
