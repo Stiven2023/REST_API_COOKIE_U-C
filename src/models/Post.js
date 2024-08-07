@@ -9,7 +9,7 @@ const commentSchema = new Schema({
   },
   emoji: {
     type: String,
-    enum: ['none', 'ungry', 'happy', 'sad'],
+    enum: ['none', 'ungry', 'happy', 'sad', 'surprised', 'facha'],
     default: 'none',
   },
   userId: {
