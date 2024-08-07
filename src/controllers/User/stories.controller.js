@@ -36,7 +36,7 @@ const getStoryById = async (req, res) => { // Obtiene una historia específica p
 
   const user = await User.findById(userId);
 
-  const story = await Story.findById(storyId);
+  const story = await Story.findById(storyId).populate('userId');
 
   res.json(story);
 
@@ -52,9 +52,9 @@ const getAllMyStories = async (req, res) => { // Obtiene todas las historias que
   const decoded = Jwt.verify(token, config.secret);
   const userId = decoded.id;
 
-  const user = await User.findById(userId).populate('storys');
+  const stories = await Story.find({ userId: userId }).populate('userId');
 
-  res.status(200).json(user.storys);
+  res.status(200).json(stories);
  } catch (error) {
   console.error("Error getting all stories:", error);
   res.status(500).json({ error: 'Internal Server Error' });
