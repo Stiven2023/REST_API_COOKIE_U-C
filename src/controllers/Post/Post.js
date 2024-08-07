@@ -25,6 +25,9 @@ import { uploadImage } from "../../cloudinary.js";
 // * Importar la librería de fechas
 import moment from "moment";
 
+// * Importar socket.io para la gestión de eventos
+import { io } from '../../index.js';
+
 // * Configurar el almacenamiento de multer en disco
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

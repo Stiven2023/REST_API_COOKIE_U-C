@@ -10,6 +10,9 @@ import User from "../../models/User.js";
 // * Importar la configuración
 import config from "../../config.js";
 
+// * Importar socket.io para la gestión de eventos
+import { io } from "../../index.js";
+
 // * Definir la clase commentController para manejar los comentarios
 class commentController {
   // * Método para obtener todos los comentarios de una publicación
@@ -98,12 +101,34 @@ class commentController {
         content,
         emoji,
         userId,
+        createdAt: new Date(),
       };
 
       // * Agregar el comentario a la publicación y guardar
       post.comments.push(comment);
       await post.save();
-      response.json({ message: "Comment created successfully", comment });
+
+      // * Combinar el comentario con los datos del usuario
+      const commentWithUserData = {
+        _id: comment._id,
+        content: comment.content,
+        emoji: comment.emoji,
+        createdAt: comment.createdAt,
+        user: {
+          _id: user._id,
+          username: user.username,
+          fullname: user.fullname,
+          image: user.image,
+        },
+      };
+
+      //* Emitir evento de nuevo comentario
+      io.emit("comment:new", { postId, comment: commentWithUserData });
+
+      response.json({
+        message: "Comment created successfully",
+        comment: commentWithUserData,
+      });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
       response
@@ -144,10 +169,13 @@ class commentController {
         return response.status(404).json({ error: "Comment not found" });
       }
 
-
       // * Eliminar el comentario y guardar la publicación
       comment.remove();
       await post.save();
+
+      //* Emitir evento de comentario eliminado
+      io.emit("comment:delete", { postId, commentId });
+
       response.json({ message: "Comment deleted successfully", comment });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
