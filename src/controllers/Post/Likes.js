@@ -10,6 +10,9 @@ import User from "../../models/User.js";
 // * Importar la configuración
 import config from "../../config.js";
 
+// * Importar socket.io para la gestión de eventos
+import { io } from "../../index.js";
+
 // * Definir la clase LikeController para manejar los likes
 class LikeController {
   // * Método para obtener todos los likes de una publicación
@@ -24,13 +27,13 @@ class LikeController {
     const token = request.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
-    
+
     //* Verifica si hay un token
     if (!token) {
       return response.status(401).json({ error: "No token provided" });
-    } 
+    }
 
-    const user = User.findById(userId).populate('likes');
+    const user = await User.findById(userId).populate('likes');
     
     //* Verifica si el usuario existe
     if (!user) {
@@ -75,7 +78,10 @@ class LikeController {
       user.likes.push(post._id);
       await user.save();
 
-      response.json({ Message: "Resource created successfully" });
+      // Emitir evento de nuevo like
+      io.emit("like:new", { postId, like });
+
+      response.json({ Message: "Resource created successfully", like });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
       response
@@ -93,7 +99,7 @@ class LikeController {
       const post = await PostModel.findById(postId);
 
       // ? Verifica si el like existe en el post
-      const deleteLike = post.likes.find((like) => like._id.equals(id));
+      const deleteLike = post.likes.id(id);
       if (!deleteLike) {
         return response
           .status(404)
@@ -101,13 +107,16 @@ class LikeController {
       }
 
       // * Eliminar el like de la publicación y guardar
-      post.likes = post.likes.filter((like) => !like._id.equals(id));
+      post.likes.id(id).remove();
       await post.save();
 
       // * Eliminar el like del usuario correspondiente
       const user = await User.findById(deleteLike.userId);
       user.likes = user.likes.filter((postId) => !postId.equals(post._id));
       await user.save();
+
+      // Emitir evento de like eliminado
+      io.emit("like:delete", { postId, likeId: id });
 
       response.json({
         Message: "Resource deleted successfully",
