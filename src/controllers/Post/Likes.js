@@ -24,14 +24,14 @@ class LikeController {
     const token = request.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
-    
+
     //* Verifica si hay un token
     if (!token) {
       return response.status(401).json({ error: "No token provided" });
-    } 
+    }
 
-    const user = User.findById(userId).populate('likes');
-    
+    const user = User.findById(userId).populate("likes");
+
     //* Verifica si el usuario existe
     if (!user) {
       return response.status(401).json({ error: "User not found" });
@@ -67,7 +67,8 @@ class LikeController {
       }
 
       // * Agregar el like a la publicación y guardar
-      post.likes.push(like);
+      const newLike = { _id: new mongoose.Types.ObjectId(), ...like }; // Genera un nuevo ID para el like
+      post.likes.push(newLike);
       await post.save();
 
       // * Guardar el like también en el usuario correspondiente
@@ -75,7 +76,10 @@ class LikeController {
       user.likes.push(post._id);
       await user.save();
 
-      response.json({ Message: "Resource created successfully" });
+      response.json({
+        Message: "Resource created successfully",
+        like: newLike,
+      });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
       response
