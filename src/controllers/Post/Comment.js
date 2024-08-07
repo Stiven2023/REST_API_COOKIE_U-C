@@ -169,13 +169,13 @@ class commentController {
         return response.status(404).json({ error: "Comment not found" });
       }
 
-      // * Eliminar el comentario y guardar la publicación
-      comment.remove();
-      await post.save();
+      // * Eliminar el comentario utilizando pull y guardar la publicación
+      post.comments.pull(commentId);
 
       //* Emitir evento de comentario eliminado
       io.emit("comment:delete", { postId, commentId });
 
+      await post.save();
       response.json({ message: "Comment deleted successfully", comment });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
