@@ -6,13 +6,13 @@ const PORT = 3001;
 
 const server = http.createServer(app);
 
-// Configuración de CORS para Socket.io
+// CORS configuration for Socket.io
 export const io = new SocketServer(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST", "DELETE"],
-    credentials: true
-  }
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
 io.on("connection", (socket) => {
@@ -29,5 +29,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

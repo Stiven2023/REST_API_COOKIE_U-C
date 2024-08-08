@@ -25,6 +25,9 @@ import { uploadImage } from "../../cloudinary.js";
 // * Importar la librería de fechas
 import moment from "moment";
 
+// * Importar socket.io para la gestión de eventos
+import { io } from '../../index.js';
+
 // * Configurar el almacenamiento de multer en disco
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -155,7 +158,7 @@ class PostController {
         return res.status(401).json({ error: "No token provided" });
       }
 
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).populate('savedPosts');
 
       if (!user) {
         return res.status(401).json({ error: "User not found" });
@@ -270,6 +273,9 @@ class PostController {
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });
+    }
+    if (!req.body.content && !req.files?.image) {
+      return res.status(400).json({ error: "Content and image are required" });
     }
 
     const postData = {
@@ -548,6 +554,57 @@ class PostController {
       // Manejar errores y devolver un mensaje de error
       res.status(500).json({
         Error: "Failed to retrieve platform analytics",
+        Details: error.message,
+      });
+    }
+  }
+  /**
+   * @method getPlatformStats
+   * @description Obtiene la cantidad total de posts, comentarios, likes y posts guardados de todos los usuarios.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Estadísticas de posts, comentarios, likes y posts guardados
+   */
+  static async getPlatformStats(req, res) {
+    try {
+      // Obtener todas las publicaciones
+      const posts = await PostModel.find({}).populate("comments").lean();
+
+      // Obtener todos los usuarios
+      const users = await User.find({}).populate("savedPosts").lean();
+
+      // Calcular el número total de publicaciones
+      const totalPosts = posts.length;
+
+      // Calcular el número total de comentarios
+      const totalComments = posts.reduce(
+        (sum, post) => sum + (post.comments ? post.comments.length : 0),
+        0
+      );
+
+      // Calcular el número total de likes
+      const totalLikes = posts.reduce(
+        (sum, post) => sum + (post.likes ? post.likes.length : 0),
+        0
+      );
+
+      // Calcular el número total de posts guardados
+      const totalSavedPosts = users.reduce(
+        (sum, user) => sum + (user.savedPosts ? user.savedPosts.length : 0),
+        0
+      );
+
+      // Devolver los datos
+      res.json({
+        totalPosts,
+        totalComments,
+        totalLikes,
+        totalSavedPosts,
+      });
+    } catch (error) {
+      // Manejar errores y devolver un mensaje de error
+      res.status(500).json({
+        Error: "Failed to retrieve platform statistics",
         Details: error.message,
       });
     }

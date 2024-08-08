@@ -1,48 +1,11 @@
 import User from "../../models/User.js";
 import sendDeleteEmail from "../../utils/emails/deleteEmail.js";
 import sendUpdateStatusEmail from "../../utils/emails/updateStatusEmail.js";
-import Jwt from "jsonwebtoken";
 import Role from "../../models/Role.js";
 import config from "../../config.js";
-import { uploadImage } from "../../cloudinary.js";
-import fs from "fs-extra";
+import { io } from '../../index.js';
+import Jwt from 'jsonwebtoken';
 
-const createUser = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    const newUser = new User({
-      username,
-      email,
-      password,
-    });
-
-    if (req.files?.image) {
-      const result = await uploadImage(req.files.image.tempFilePath);
-      newUser.image = {
-        public_id: result.public_id,
-        secure_url: result.secure_url,
-      };
-      await fs.unlink(req.files.image.tempFilePath);
-    }
-
-    // if (req.files?.video) {
-    //     const result = await uploadVideo(req.files.video.tempFilePath)
-    //     newUser.video = {
-    //         public_id: result.public_id,
-    //         secure_url: result.secure_url
-    //     }
-    //     await fs.unlink(req.files.video.tempFilePath)
-    // }
-
-    await newUser.save();
-    res.status(200).json({ message: "User created successfully" });
-  } catch (error) {
-    res.status(500).json(error);
-  }
-};
-
-// Admin
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -52,6 +15,7 @@ const deleteUser = async (req, res) => {
     await User.findByIdAndDelete(userId);
     await sendDeleteEmail(email, username);
 
+    io.emit('userDelete', userId);
     res.status(204).json("user delete successfully");
   } catch (error) {
     res.status(500).json({ error: "Error deleting user" });
@@ -83,37 +47,36 @@ const changeRole = async (req, res) => {
     userToChange.role = [role._id];
     await userToChange.save();
 
+    io.emit('userUpdate', userToChange);
     res.status(200).json({ message: "User role changed successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Moder or Admin
 const getAllUsers = async (req, res) => {
   try {
     const token = req.headers["x-access-token"];
     const decoded = Jwt.verify(token, config.secret);
 
-    // Obtén todos los usuarios excepto el que coincide con el ID del token
-    const users = await User.find({ _id: { $ne: decoded.id } }).populate(
-      "role",
-      "name"
-    );
+    const users = await User.find({ _id: { $ne: decoded.id } }).populate("role");
 
     res.json(users);
+    
   } catch (error) {
-    res.status(500).json({ error: "Error fetching users" });
+    console.error(error);
+    res.status(500).json({ error: "Error fetching users", Details: error });
   }
 };
 
 const getUsersById = async (req, res) => {
   try {
-    const users = await User.findById(req.params.userId);
+    const { userId } = req.params
+    const user = await User.findById(userId).populate('role').populate('following').populate('followers').populate('friends').populate('posts').populate('posts').populate('savedPosts').populate('likes');
 
-    res.json(users);
+    res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching user by id" });
+    res.status(500).json({ error: "Error fetching user by id", Details: error });
   }
 };
 
@@ -126,29 +89,17 @@ const getUsersByUsername = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    io.emit('userUpdate', user);
     res.json(user);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Error fetching user by username",
-        message: error.message,
-      });
+    res.status(500).json({ error: "Error fetching user by username", message: error.message });
   }
 };
 
 const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const {
-      username,
-      email,
-      password,
-      fullname,
-      gender,
-      phone_number,
-      description,
-    } = req.body;
+    const { username, email, password, fullname, gender, phone_number, description, } = req.body;
 
     await User.findByIdAndUpdate(userId, {
       username,
@@ -160,6 +111,7 @@ const updateUser = async (req, res) => {
       description,
     });
 
+    io.emit('userUpdate', User);
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error updating user" });
@@ -171,7 +123,6 @@ const updateStatus = async (req, res) => {
     const { userId } = req.params;
     const { status } = req.body;
 
-    // Buscar el usuario y actualizar el estado
     const user = await User.findByIdAndUpdate(
       userId,
       { status },
@@ -182,18 +133,17 @@ const updateStatus = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Suponiendo que 'sendUpdateStatusEmail' necesita email y username
     try {
       await sendUpdateStatusEmail(user.email, user.username, status);
     } catch (emailError) {
       console.error("Error sending update status email:", emailError);
-      // Enviar respuesta con éxito a pesar de error en el envío de email
       return res.status(200).json({
         message: "User status updated successfully, but failed to send email",
         user,
       });
     }
 
+    io.emit('userUpdate', user);
     res.status(200).json({ message: "User status updated successfully", user });
   } catch (error) {
     console.error("Error updating user status:", error);
@@ -201,9 +151,7 @@ const updateStatus = async (req, res) => {
   }
 };
 
-// User
 const followUser = async (req, res) => {
-  // user
   try {
     const token = req.headers["x-access-token"];
     const decoded = Jwt.verify(token, config.secret);
@@ -228,14 +176,17 @@ const followUser = async (req, res) => {
     await user.save();
     await follower.save();
 
+    // Emitir evento a todos los clientes conectados
+    io.emit('userFollowed', { userId: user._id, followerId: follower._id });
+
     res.json({ message: "Follower added successfully." });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error following user" });
   }
 };
 
 const unfollowUser = async (req, res) => {
-  // user
   try {
     const token = req.headers["x-access-token"];
     const decoded = Jwt.verify(token, config.secret);
@@ -249,36 +200,51 @@ const unfollowUser = async (req, res) => {
     }
 
     user.followers = user.followers.filter(
-      (follower) => follower.toString() !== decoded.id
+      (followerId) => followerId.toString() !== decoded.id
     );
     follower.following = follower.following.filter(
-      (user) => user.toString() !== userId
+      (followedUserId) => followedUserId.toString() !== userId
     );
 
     await user.save();
     await follower.save();
 
+    // Emitir evento a todos los clientes conectados
+    io.emit('userUnfollowed', { userId: user._id, followerId: follower._id });
+
     res.json({ message: "Follower removed successfully." });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error unfollowing user" });
   }
 };
 
 const getFollowers = async (req, res) => {
-  // user
   try {
-    const users = await User.findById(req.params.userId);
+    const { userId } = req.params; 
 
-    res.json(users.followers);
+    const user = await User.findById(userId).populate('followers');
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user.followers);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching followers" });
+    console.error("Error fetching followers:", error);
+    res.status(500).json({ error: "Error fetching followers", details: error.message });
   }
 };
 
 const getFollowing = async (req, res) => {
-  // user
   try {
-    const users = await User.findById(req.params.userId);
+    const { userId } = req.params;
+
+    const users = await User.findById(userId).populate('following');
+
+    if (!users) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     res.json(users.following);
   } catch (error) {
@@ -287,7 +253,6 @@ const getFollowing = async (req, res) => {
 };
 
 const addFriend = async (req, res) => {
-  // user
   try {
     const token = req.headers["x-access-token"];
     const decoded = Jwt.verify(token, config.secret);
@@ -305,6 +270,7 @@ const addFriend = async (req, res) => {
     await friend.save();
     await user.save();
 
+    io.emit('friendAdded',{ userId: user._id, friendId: friend._id });
     res.json({ message: "Friend added successfully." });
   } catch (error) {
     res.status(500).json({ error: "Error adding friend" });
@@ -312,7 +278,6 @@ const addFriend = async (req, res) => {
 };
 
 const removeFriend = async (req, res) => {
-  // user
   try {
     const token = req.headers["x-access-token"];
     const decoded = Jwt.verify(token, config.secret);
@@ -330,6 +295,7 @@ const removeFriend = async (req, res) => {
     await user.save();
     await friend.save();
 
+    io.emit('friendRemoved',{ userId: user._id, friendId: friend._id });
     res.json({ message: "Friend removed successfully." });
   } catch (error) {
     res.status(500).json({ error: "Error removing friend" });
@@ -337,11 +303,14 @@ const removeFriend = async (req, res) => {
 };
 
 const getFriends = async (req, res) => {
-  // user
   try {
-    const users = await User.findById(req.params.userId);
+    const token = req.headers["x-access-token"];
+    const decoded = Jwt.verify(token, config.secret);
 
-    res.json(users.friends);
+    const { userId } = req.params;
+		const user = await User.findById(userId).populate('friends');
+
+    res.json(user.friends);
   } catch (error) {
     res.status(500).json({ error: "Error fetching friends" });
   }
@@ -369,27 +338,11 @@ const searchUsers = async (req, res) => {
       ],
     }).populate("role", "name");
 
+    io.emit('userUpdate', usuarios);
     res.json(usuarios);
   } catch (error) {
     res.status(500).json({ error: "Error al buscar usuarios" });
   }
 };
 
-export {
-  getAllUsers,
-  getFollowers,
-  getFollowing,
-  getFriends,
-  getUsersById,
-  getUsersByUsername,
-  searchUsers,
-  deleteUser,
-  updateStatus,
-  updateUser,
-  followUser,
-  unfollowUser,
-  addFriend,
-  removeFriend,
-  changeRole,
-  createUser
-};
+export { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole };

@@ -24,14 +24,14 @@ class LikeController {
     const token = request.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
     const userId = decoded.id;
-    
+
     //* Verifica si hay un token
     if (!token) {
       return response.status(401).json({ error: "No token provided" });
-    } 
+    }
 
-    const user = User.findById(userId);
-    
+    const user = User.findById(userId).populate("likes");
+
     //* Verifica si el usuario existe
     if (!user) {
       return response.status(401).json({ error: "User not found" });
