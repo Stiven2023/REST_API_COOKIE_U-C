@@ -75,6 +75,14 @@ class LikeController {
       user.likes.push(post._id);
       await user.save();
 
+      //* Emitar una respuesta socket del like
+      request.io.emit("like", {
+        action: "like",
+        post: post,
+        like: like,
+      });
+
+      // * Devolver una respuesta exitosa
       response.json({ Message: "Resource created successfully" });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
@@ -108,6 +116,13 @@ class LikeController {
       const user = await User.findById(deleteLike.userId);
       user.likes = user.likes.filter((postId) => !postId.equals(post._id));
       await user.save();
+
+      //* Emitar una respuesta socket del like
+      request.io.emit("like", {
+        action: "unlike",
+        post: post,
+        like: deleteLike,
+      });
 
       response.json({
         Message: "Resource deleted successfully",

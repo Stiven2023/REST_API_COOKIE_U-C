@@ -26,7 +26,7 @@ import { uploadImage } from "../../cloudinary.js";
 import moment from "moment";
 
 // * Importar socket.io para la gestión de eventos
-import { io } from '../../index.js';
+import { io } from "../../index.js";
 
 // * Configurar el almacenamiento de multer en disco
 const storage = multer.diskStorage({
@@ -158,7 +158,7 @@ class PostController {
         return res.status(401).json({ error: "No token provided" });
       }
 
-      const user = await User.findById(userId).populate('savedPosts');
+      const user = await User.findById(userId).populate("savedPosts");
 
       if (!user) {
         return res.status(401).json({ error: "User not found" });
@@ -301,6 +301,9 @@ class PostController {
       user.posts.push(post);
       await user.save();
       await post.save();
+
+      //* Emitir evento de creación de publicación
+      io.emit("newPost", post);
 
       res.status(201).json(post);
     } catch (error) {
