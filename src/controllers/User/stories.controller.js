@@ -52,7 +52,7 @@ const getAllMyStories = async (req, res) => { // Obtiene todas las historias que
   const decoded = Jwt.verify(token, config.secret);
   const userId = decoded.id;
 
-  const stories = await Story.find({ userId: userId }).populate('userId');
+  const stories = await Story.find({ userId: userId }).populate('userId').populate('isViewed');
 
   res.status(200).json(stories);
  } catch (error) {
