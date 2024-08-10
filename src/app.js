@@ -14,6 +14,7 @@ import postRoutes from "./routes/Post/Post.js";
 import commentRoutes from "./routes/Post/Comments.js";
 import likeRoutes from "./routes/Post/Likes.js";
 import storyRoutes from "./routes/user/story.routes.js";
+import { deleteStoryesAfter24Hours } from "./controllers/User/stories.controller.js";
 
 import cors from "cors";
 
@@ -24,6 +25,12 @@ const app = express();
 app.use(cors()); //? Enable CORS for all routes
 
 createRoles();
+
+deleteStoryesAfter24Hours();
+
+setInterval(() => {
+  deleteStoryesAfter24Hours();
+}, 60000);
 
 app.use(express.json());
 app.use(morgan("dev"));

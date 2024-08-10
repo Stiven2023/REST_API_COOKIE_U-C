@@ -155,4 +155,91 @@ const deleteStory = async (req, res) => { // Elimina una historia ✅
  }
 }
 
-export { getAllStories, getStoryById, getAllMyStories, createStory, deleteStory };
+const viewStory = async (req, res) => { // Ver una historia ✅
+ try {
+  const token = req.headers['x-access-token'];
+  const decoded = Jwt.verify(token, config.secret);
+  const userId = decoded.id;
+  const { storyId } = req.params;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+   return res.status(401).json({ error: 'User not found' });
+  }
+
+  const story = await Story.findById(storyId);
+
+  if (!story) {
+   return res.status(404).json({ error: 'Story not found' });
+  }
+
+  if (story.userId.toString() === userId) {
+   res.json('You cannot view your own story');
+   return;
+  }
+
+  if (story.isViewed.includes(userId)) {
+   res.json('Story already viewed');
+   return;
+  }
+
+  story.isViewed.push(userId);
+  await story.save();
+
+  io.to(storyId).emit('storyViewed', story);
+  res.json('Story viewed successfully');
+ } catch (error) {
+  console.error("Error viewing story:", error);
+  res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
+ }
+}
+
+const getViewStory = async (req, res) => { // Obtener el historia vista por el usuario
+ try {
+  const token = req.headers['x-access-token'];
+  const decoded = Jwt.verify(token, config.secret);
+  const userId = decoded.id;
+  const { storyId } = req.params;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+   return res.status(401).json({ error: 'User not found' });
+  }
+
+  const story = await Story.findById(storyId).populate('isViewed');
+
+  if (!story) {
+   return res.status(404).json({ error: 'Story not found' });
+  }
+
+  if (story.userId.toString() !== userId) {
+   res.json('this story is not yours');
+   return;
+  }
+
+  io.to(storyId).emit('storyViewed', story);
+  res.status(200).json(story.isViewed);
+ } catch (error) {
+  console.error("Error viewing story:", error);
+  res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
+ }
+}
+
+const deleteStoryesAfter24Hours = async (req, res) => { // Eliminar historias despues de 24 horas
+ try {
+  const stories = await Story.find({});
+
+  const storiesToDelete = stories.filter(story => Date.now() - story.createdAt.getTime() > 24 * 60 * 60 * 1000);
+
+  await Promise.all(storiesToDelete.map(story => story.deleteOne()));
+
+  console.log('Stories deleted successfully');
+ } catch (error) {
+  console.error("Error deleting stories after 24 hours:", error);
+  res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
+ }
+}
+
+export { getAllStories, getStoryById, getAllMyStories, createStory, deleteStory, viewStory, getViewStory, deleteStoryesAfter24Hours };
