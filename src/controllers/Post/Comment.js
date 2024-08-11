@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import config from "../../config.js";
 import { io } from "../../index.js";
-import { uploadImageComment } from "../../utils/uploadImage.js";
+import { uploadImageComment } from "../../cloudinary.js";
 
 /**
  * Controlador para manejar los comentarios.
