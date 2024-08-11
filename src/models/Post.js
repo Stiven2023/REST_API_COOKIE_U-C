@@ -15,6 +15,7 @@ const commentSchema = new Schema({
   image: {
     public_id: String,
     secure_url: String,
+    default: null,
   },
   userId: {
     type: Schema.Types.ObjectId,
