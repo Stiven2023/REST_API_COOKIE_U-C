@@ -21,6 +21,7 @@ const commentSchema = new Schema({
       type: String,
       required: false,
     },
+    default: null,
   },
   userId: {
     type: Schema.Types.ObjectId,

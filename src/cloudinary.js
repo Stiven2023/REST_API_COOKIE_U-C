@@ -27,6 +27,11 @@ export async function IploadImagePost(filePath) {
         folder: 'cokieEnterprice/posts/images'
     })
 }
+export async function uploadImageComment(filePath) {
+    return await cloudinary.uploader.upload(filePath, {
+        folder: 'cokieEnterprice/comments/images'
+    });
+}
 
 export async function uploadImageStory(filePath) {
     return await cloudinary.uploader.upload(filePath, {

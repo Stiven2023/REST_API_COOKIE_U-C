@@ -1,9 +1,9 @@
-import upload from '../../utils/multerConfig.js'; 
 import PostModel from "../../models/Post.js";
 import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import config from "../../config.js";
 import { io } from "../../index.js";
+import { uploadImageComment } from "../../utils/uploadImage.js";
 
 /**
  * Controlador para manejar los comentarios.
@@ -11,7 +11,7 @@ import { io } from "../../index.js";
 class commentController {
   /**
    * Obtiene todos los comentarios de una publicación.
-   * 
+   *
    * @param {Object} request - El objeto de solicitud.
    * @param {Object} response - El objeto de respuesta.
    * @returns {void}
@@ -39,6 +39,7 @@ class commentController {
         content: comment.content,
         emoji: comment.emoji || "none",
         createdAt: comment.createdAt,
+        image: comment.image,
         user: userMap[comment.userId],
       }));
 
@@ -52,76 +53,75 @@ class commentController {
 
   /**
    * Crea un nuevo comentario en una publicación.
-   * 
+   *
    * @param {Object} request - El objeto de solicitud. Debe incluir un token de autenticación en los encabezados y los datos del comentario en el cuerpo de la solicitud.
    * @param {Object} response - El objeto de respuesta.
    * @returns {void}
    */
   static async create(request, response) {
     try {
-      const uploadMiddleware = upload.single('image'); // 'image' es el campo del formulario
+      const token = request.headers["x-access-token"];
+      if (!token) {
+        return response.status(401).json({ error: "No token provided" });
+      }
 
-      uploadMiddleware(request, response, async (err) => {
-        if (err) {
-          return response.status(400).json({ error: err.message });
-        }
+      const decoded = jwt.verify(token, config.secret);
+      const userId = decoded.id;
+      const { content, emoji = "none" } = request.body;
 
-        const token = request.headers["x-access-token"];
-        if (!token) {
-          return response.status(401).json({ error: "No token provided" });
-        }
+      if (!content) {
+        return response.status(400).json({ error: "Content is required" });
+      }
 
-        const decoded = jwt.verify(token, config.secret);
-        const userId = decoded.id;
-        const { content, emoji = "none" } = request.body;
+      const { postId } = request.params;
 
-        if (!content) {
-          return response.status(400).json({ error: "Content is required" });
-        }
+      const user = await User.findById(userId);
+      if (!user) {
+        return response.status(404).json({ error: "User not found" });
+      }
 
-        const { postId } = request.params;
+      const post = await PostModel.findById(postId);
+      if (!post) {
+        return response.status(404).json({ error: "Post not found" });
+      }
 
-        const user = await User.findById(userId);
-        if (!user) {
-          return response.status(404).json({ error: "User not found" });
-        }
+      // Subir imagen si existe
+      let imageUrl = null;
+      if (request.file) {
+        const result = await uploadImageComment(request.file.path);
+        imageUrl = result.secure_url;
+      }
 
-        const post = await PostModel.findById(postId);
-        if (!post) {
-          return response.status(404).json({ error: "Post not found" });
-        }
+      const comment = {
+        content,
+        emoji,
+        userId,
+        createdAt: new Date(),
+        image: imageUrl,
+      };
 
-        const comment = {
-          content,
-          emoji,
-          userId,
-          createdAt: new Date(),
-          image: request.file ? request.file.path : null,
-        };
+      post.comments.push(comment);
+      await post.save();
 
-        post.comments.push(comment);
-        await post.save();
+      const commentWithUserData = {
+        _id: comment._id,
+        content: comment.content,
+        emoji: comment.emoji,
+        createdAt: comment.createdAt,
+        image: comment.image,
+        user: {
+          _id: user._id,
+          username: user.username,
+          fullname: user.fullname,
+          image: user.image,
+        },
+      };
 
-        const commentWithUserData = {
-          _id: comment._id,
-          content: comment.content,
-          emoji: comment.emoji,
-          createdAt: comment.createdAt,
-          image: comment.image,
-          user: {
-            _id: user._id,
-            username: user.username,
-            fullname: user.fullname,
-            image: user.image,
-          },
-        };
+      io.emit("comment:new", { postId, comment: commentWithUserData });
 
-        io.emit("comment:new", { postId, comment: commentWithUserData });
-
-        response.json({
-          message: "Comment created successfully",
-          comment: commentWithUserData,
-        });
+      response.json({
+        message: "Comment created successfully",
+        comment: commentWithUserData,
       });
     } catch (error) {
       response
@@ -132,7 +132,7 @@ class commentController {
 
   /**
    * Elimina un comentario de una publicación.
-   * 
+   *
    * @param {Object} request - El objeto de solicitud. Debe incluir un token de autenticación en los encabezados y los IDs del post y comentario en los parámetros de la solicitud.
    * @param {Object} response - El objeto de respuesta.
    * @returns {void}
