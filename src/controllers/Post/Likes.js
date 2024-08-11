@@ -10,6 +10,9 @@ import User from "../../models/User.js";
 // * Importar la configuración
 import config from "../../config.js";
 
+// * Importar socket.io para la gestión de eventos
+import { io } from "../../index.js";
+
 // * Definir la clase LikeController para manejar los likes
 class LikeController {
   // * Método para obtener todos los likes de una publicación
@@ -30,7 +33,7 @@ class LikeController {
       return response.status(401).json({ error: "No token provided" });
     }
 
-    const user = User.findById(userId).populate("likes");
+    const user = await User.findById(userId).populate("likes");
 
     //* Verifica si el usuario existe
     if (!user) {
@@ -75,15 +78,10 @@ class LikeController {
       user.likes.push(post._id);
       await user.save();
 
-      //* Emitar una respuesta socket del like
-      request.io.emit("like", {
-        action: "like",
-        post: post,
-        like: like,
-      });
+      // Emitir evento de nuevo like
+      io.emit("like:new", { postId, like });
 
-      // * Devolver una respuesta exitosa
-      response.json({ Message: "Resource created successfully" });
+      response.json({ Message: "Resource created successfully", like });
     } catch (error) {
       // ! Manejar errores y devolver un error 500 con detalles
       response
@@ -94,45 +92,50 @@ class LikeController {
 
   // * Método para eliminar un like
   static async delete(request, response) {
-    const { id } = request.params;
-    const { postId } = request.params;
+    const { id } = request.params; // ID del like
+    const { postId } = request.params; // ID del post
 
     try {
+      // Buscar la publicación por ID
       const post = await PostModel.findById(postId);
+      if (!post) {
+        return response.status(404).json({ Error: "Post not found" });
+      }
 
-      // ? Verifica si el like existe en el post
-      const deleteLike = post.likes.find((like) => like._id.equals(id));
-      if (!deleteLike) {
+      // Verificar si el like existe en el post
+      const likeIndex = post.likes.findIndex(
+        (like) => like._id.toString() === id
+      );
+      if (likeIndex === -1) {
         return response
           .status(404)
           .json({ Error: "Like not found in the post" });
       }
 
-      // * Eliminar el like de la publicación y guardar
-      post.likes = post.likes.filter((like) => !like._id.equals(id));
+      // Eliminar el like de la publicación
+      const likeToDelete = post.likes[likeIndex];
+      post.likes.splice(likeIndex, 1);
       await post.save();
 
-      // * Eliminar el like del usuario correspondiente
-      const user = await User.findById(deleteLike.userId);
-      user.likes = user.likes.filter((postId) => !postId.equals(post._id));
-      await user.save();
+      // Eliminar el like del usuario correspondiente
+      const user = await User.findById(likeToDelete.userId);
+      if (user) {
+        user.likes = user.likes.filter((postId) => !postId.equals(post._id));
+        await user.save();
+      }
 
-      //* Emitar una respuesta socket del like
-      request.io.emit("like", {
-        action: "unlike",
-        post: post,
-        like: deleteLike,
-      });
+      // Emitir evento de like eliminado
+      io.emit("like:delete", { postId, likeId: id });
 
       response.json({
         Message: "Resource deleted successfully",
-        like: deleteLike,
+        like: likeToDelete,
       });
     } catch (error) {
-      // ! Manejar errores y devolver un error 500 con detalles
+      console.error("Error deleting like:", error); // Agregar logs para depuración
       response.status(500).json({
         Error: "Failed to delete resource",
-        Details: error,
+        Details: error.message,
       });
     }
   }

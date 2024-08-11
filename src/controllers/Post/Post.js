@@ -612,6 +612,61 @@ class PostController {
       });
     }
   }
+  /**
+   * @method getRecommendedPosts
+   * @description Obtiene publicaciones recomendadas basadas en likes, comentarios y si son creadas por amigos o personas que el usuario sigue.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de publicaciones recomendadas
+   */
+  static async getRecommendedPosts(req, res) {
+    try {
+      const token = req.headers["x-access-token"];
+      const decoded = jwt.verify(token, config.secret);
+      const userId = decoded.id;
+
+      if (!token) {
+        return res.status(401).json({ error: "No token provided" });
+      }
+
+      // Obtener el usuario autenticado
+      const user = await User.findById(userId)
+        .populate("friends following")
+        .lean();
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Obtener los IDs de los amigos y personas que el usuario sigue
+      const friendsAndFollowingIds = user.friends
+        .concat(user.following)
+        .map((friend) => friend._id);
+
+      // Obtener publicaciones creadas por los amigos o personas que sigue
+      const posts = await PostModel.find({
+        userId: { $in: friendsAndFollowingIds },
+      })
+        .populate("comments")
+        .lean();
+
+      // Ordenar publicaciones por likes y comentarios, y luego por fecha de creación
+      posts.sort((a, b) => {
+        const aScore = (a.likes.length || 0) + (a.comments.length || 0);
+        const bScore = (b.likes.length || 0) + (b.comments.length || 0);
+        if (aScore === bScore) {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        return bScore - aScore;
+      });
+
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({
+        Error: "Failed to retrieve recommended posts",
+        Details: error.message,
+      });
+    }
+  }
 }
 
 // * Exportar el controlador de publicaciones
