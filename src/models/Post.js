@@ -13,9 +13,14 @@ const commentSchema = new Schema({
     default: 'none',
   },
   image: {
-    public_id: String,
-    secure_url: String,
-    default: null,
+    public_id: {
+      type: String,
+      required: false,
+    },
+    secure_url: {
+      type: String,
+      required: false,
+    },
   },
   userId: {
     type: Schema.Types.ObjectId,
