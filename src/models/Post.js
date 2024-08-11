@@ -12,6 +12,10 @@ const commentSchema = new Schema({
     enum: ['none', 'ungry', 'happy', 'sad', 'surprised', 'facha'],
     default: 'none',
   },
+  image: {
+    public_id: String,
+    secure_url: String,
+  },
   userId: {
     type: Schema.Types.ObjectId,
     required: true,
