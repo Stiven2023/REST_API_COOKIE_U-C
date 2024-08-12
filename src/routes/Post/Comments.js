@@ -11,5 +11,6 @@ commentRoutes.get("/", () => {
 commentRoutes.get("/:postId/comments", commentsController.getAll); //* read the comments
 commentRoutes.post("/:postId/comments", commentsController.create); //* create a comment
 commentRoutes.delete("/:postId/comments/:id", commentsController.delete); //* Delete a post
+commentRoutes.post("/reports/:postId/comments/:commentId", commentsController.report);
 
 export default commentRoutes;

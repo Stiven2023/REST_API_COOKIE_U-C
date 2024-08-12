@@ -2,6 +2,41 @@ import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
+const reportPostSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+  },
+  postId: {
+    type: Schema.Types.ObjectId,
+  },
+  reason: {
+    type: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const reportCommentSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+  },
+  postId: {
+    type: Schema.Types.ObjectId,
+  },
+  commentId: {
+    type: Schema.Types.ObjectId,
+  },
+  reason: {
+    type: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const commentSchema = new Schema({
   content: {
     type: String,
@@ -26,6 +61,7 @@ const commentSchema = new Schema({
     type: Schema.Types.ObjectId,
     required: true,
   },
+  reports: [reportCommentSchema],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -64,6 +100,7 @@ const postSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
     },
+    reports: [reportSchema],
     likes: [likeSchema],
     comments: [commentSchema],
   },

@@ -28,21 +28,6 @@ import moment from "moment";
 // * Importar socket.io para la gestión de eventos
 import { io } from "../../index.js";
 
-// * Configurar el almacenamiento de multer en disco
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./temp");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
-
-// * Configurar multer con la configuración de almacenamiento
-const upload = multer({ storage: storage });
 
 // * Definir la clase PostController para manejar las publicaciones
 class PostController {
@@ -357,6 +342,44 @@ class PostController {
     }
   }
 
+  /**
+   * @method reportPost
+   * @description Reporta una publicación para que sea revisada por un administrador.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de búsqueda o error
+   */
+  static async reportPost(req, res) {
+    const { postId } = req.params;
+    const { reason } = req.body;
+
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, config.secret);
+    const userId = decoded.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const post = await PostModel.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    try {
+      post.reports.push({
+        userId: userId,
+        postId: postId,
+        reason: reason,
+      });
+
+      await post.save();
+      res.status(200).json({ message: "Post reported successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to report post" });
+    }
+  }
   /**
    * @method getAllUsersWithPosts
    * @description Obtiene todos los usuarios con sus publicaciones. Incluye detalles de la publicación como comentarios.

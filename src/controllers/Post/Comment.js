@@ -9,22 +9,6 @@ import path from "path";
 // * Importar fs para operaciones de sistema de archivos
 import fs from "fs/promises";
 
-
-// Configurar el almacenamiento de multer en disco
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./temp");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({ storage });
-
 /**
  * Controlador para manejar los comentarios.
  */
@@ -199,6 +183,49 @@ class commentController {
       response
         .status(500)
         .json({ error: "Failed to delete comment", details: error.message });
+    }
+  }
+  /**
+   * @method report
+   * @description Reporta comentarios para que sean revisados por un administrador.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de búsqueda o error
+   */
+  static async report(req, res) {
+    const { postId, commentId } = req.params;
+    const { reason } = req.body;
+
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, config.secret);
+    const userId = decoded.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const post = await PostModel.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    try {
+      comment.reports.push({
+        reason,
+        userId,
+        postId,
+        commentId,
+        createdAt: new Date(),
+      })
+      res.status(200).json({ message: "Comment reported successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to report Comment" });
     }
   }
 }
