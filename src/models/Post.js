@@ -9,8 +9,8 @@ const commentSchema = new Schema({
   },
   emoji: {
     type: String,
-    enum: ['none', 'ungry', 'happy', 'sad', 'surprised', 'facha'],
-    default: 'none',
+    enum: ["none", "ungry", "happy", "sad", "surprised", "facha"],
+    default: "none",
   },
   image: {
     public_id: {
@@ -21,7 +21,6 @@ const commentSchema = new Schema({
       type: String,
       required: false,
     },
-    default: null,
   },
   userId: {
     type: Schema.Types.ObjectId,
