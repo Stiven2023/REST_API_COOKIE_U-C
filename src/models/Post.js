@@ -39,6 +39,17 @@ const reportCommentSchema = new Schema({
   },
 });
 
+const likeSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+
 const commentSchema = new Schema({
   content: {
     type: String,
@@ -70,16 +81,6 @@ const commentSchema = new Schema({
   },
 });
 
-const likeSchema = new Schema({
-  userId: {
-    type: Schema.Types.ObjectId,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
 const postSchema = new Schema(
   {
     content: {
@@ -102,6 +103,20 @@ const postSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
     },
+    activity: {
+      type: String,
+      required: false,
+    },
+    place: {
+      type: String,
+      required: false,
+    },
+    tagsUsers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     reports: [reportPostSchema],
     likes: [likeSchema],
     comments: [commentSchema],
