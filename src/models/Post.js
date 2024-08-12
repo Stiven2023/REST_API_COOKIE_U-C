@@ -53,7 +53,7 @@ const likeSchema = new Schema({
 const commentSchema = new Schema({
   content: {
     type: String,
-    required: true,
+    required: false,
   },
   emoji: {
     type: String,

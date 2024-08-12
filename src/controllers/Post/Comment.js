@@ -72,10 +72,10 @@ class commentController {
     const userId = decoded.id;
     const { content, emoji = "none" } = request.body;
 
-    if (!content && !request.files?.image) {
+    if (!content && !request.files?.image && !emoji) {
       return response
         .status(400)
-        .json({ error: "Content or image is required" });
+        .json({ error: "Content, emoji or image is required" });
     }
 
     const { postId } = request.params;
