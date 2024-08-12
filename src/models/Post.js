@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 const reportPostSchema = new Schema({
+  type: Schema.Types.ObjectId,
   userId: {
     type: Schema.Types.ObjectId,
   },
@@ -19,6 +20,7 @@ const reportPostSchema = new Schema({
 });
 
 const reportCommentSchema = new Schema({
+  type: Schema.Types.ObjectId,
   userId: {
     type: Schema.Types.ObjectId,
   },
@@ -100,7 +102,7 @@ const postSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
     },
-    reports: [reportSchema],
+    reports: [reportPostSchema],
     likes: [likeSchema],
     comments: [commentSchema],
   },
