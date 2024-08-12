@@ -6,6 +6,9 @@ import { io } from "../../index.js";
 import { uploadImageComment } from "../../cloudinary.js";
 import multer from "multer";
 import path from "path";
+// * Importar fs para operaciones de sistema de archivos
+import fs from "fs/promises";
+
 
 // Configurar el almacenamiento de multer en disco
 const storage = multer.diskStorage({
