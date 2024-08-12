@@ -3,7 +3,24 @@ import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import config from "../../config.js";
 import { io } from "../../index.js";
-import { uploadImageComment } from "../../cloudinary.js";
+import { uploadImageComment } from "../../utils/uploadImage.js";
+import multer from "multer";
+import path from "path";
+
+// Configurar el almacenamiento de multer en disco
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./temp");
+  },
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
+const upload = multer({ storage });
 
 /**
  * Controlador para manejar los comentarios.
@@ -85,11 +102,13 @@ class commentController {
         return response.status(404).json({ error: "Post not found" });
       }
 
-      // Subir imagen si existe
-      let imageUrl = null;
+      let imageData = null;
       if (request.file) {
         const result = await uploadImageComment(request.file.path);
-        imageUrl = result.secure_url;
+        imageData = {
+          public_id: result.public_id,
+          secure_url: result.secure_url,
+        };
       }
 
       const comment = {
@@ -97,7 +116,7 @@ class commentController {
         emoji,
         userId,
         createdAt: new Date(),
-        image: imageUrl,
+        image: imageData,
       };
 
       post.comments.push(comment);
