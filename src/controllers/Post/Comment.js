@@ -124,7 +124,7 @@ class commentController {
         emoji,
         userId,
         createdAt: new Date(),
-        image: imageData ? imageData.secure_url : null,
+        image: imageData ? imageData : null,
       };
 
       post.comments.push(comment);
