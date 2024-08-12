@@ -76,22 +76,24 @@ class commentController {
    * @returns {void}
    */
   static async create(request, response) {
+    const token = request.headers["x-access-token"];
+    if (!token) {
+      return response.status(401).json({ error: "No token provided" });
+    }
+
+    const decoded = jwt.verify(token, config.secret);
+    const userId = decoded.id;
+    const { content, emoji = "none" } = request.body;
+
+    if (!content && !request.files?.image) {
+      return response
+        .status(400)
+        .json({ error: "Content or image is required" });
+    }
+
+    const { postId } = request.params;
+
     try {
-      const token = request.headers["x-access-token"];
-      if (!token) {
-        return response.status(401).json({ error: "No token provided" });
-      }
-
-      const decoded = jwt.verify(token, config.secret);
-      const userId = decoded.id;
-      const { content, emoji = "none" } = request.body;
-
-      if (!content) {
-        return response.status(400).json({ error: "Content is required" });
-      }
-
-      const { postId } = request.params;
-
       const user = await User.findById(userId);
       if (!user) {
         return response.status(404).json({ error: "User not found" });
@@ -103,12 +105,15 @@ class commentController {
       }
 
       let imageData = null;
-      if (request.file) {
-        const result = await uploadImageComment(request.file.path);
+      if (request.files?.image) {
+        const result = await uploadImageComment(
+          request.files.image.tempFilePath
+        );
         imageData = {
           public_id: result.public_id,
           secure_url: result.secure_url,
         };
+        await fs.unlink(request.files.image.tempFilePath);
       }
 
       const comment = {
@@ -116,7 +121,7 @@ class commentController {
         emoji,
         userId,
         createdAt: new Date(),
-        image: imageData,
+        image: imageData ? imageData.secure_url : null,
       };
 
       post.comments.push(comment);
