@@ -131,7 +131,7 @@ const updateChat = async (req, res) => {
     const userId = decoded.id;
 
     const chatId = req.params.chatId;
-    const { name } = req.body;
+    const { name, addUsers, removeUsers } = req.body;
 
     const chat = await Chat.findById(chatId);
 
@@ -147,15 +147,38 @@ const updateChat = async (req, res) => {
       return res.status(403).json({ error: 'This chat does not allow editing unless it has at least 3 participants' });
     }
 
-    chat.name = name;
+    if (addUsers && Array.isArray(addUsers)) {
+      addUsers.forEach((userToAdd) => {
+        if (!chat.users.includes(userToAdd)) {
+          chat.users.push(userToAdd);
+        }
+      });
+    }
+
+    if (removeUsers && Array.isArray(removeUsers)) {
+      removeUsers.forEach((userToRemove) => {
+        chat.users = chat.users.filter((user) => user !== userToRemove);
+      });
+    }
+
+    if (name) {
+      chat.name = name;
+    }
+
     await chat.save();
 
-    res.status(200).json({ message: 'Chat name updated successfully' });
+    io.to(chatId).emit('updateChat', {
+      chatId: chat._id,
+      name: chat.name,
+      users: chat.users,
+    });
+
+    res.status(200).json({ message: 'Chat updated successfully', chat: { chatId: chat._id, name: chat.name, users: chat.users } });
   } catch (error) {
     console.error("Error updating chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
-}
+};
 
 const deleteChat = async (req, res) => {
   try {
