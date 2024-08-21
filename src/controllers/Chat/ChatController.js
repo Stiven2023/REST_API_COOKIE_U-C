@@ -131,7 +131,7 @@ const updateChat = async (req, res) => {
     const userId = decoded.id;
 
     const chatId = req.params.chatId;
-    const { name, addUsers, removeUsers } = req.body;
+    const { name, users } = req.body; 
 
     const chat = await Chat.findById(chatId);
 
@@ -147,18 +147,8 @@ const updateChat = async (req, res) => {
       return res.status(403).json({ error: 'This chat does not allow editing unless it has at least 3 participants' });
     }
 
-    if (addUsers && Array.isArray(addUsers)) {
-      addUsers.forEach((userToAdd) => {
-        if (!chat.users.includes(userToAdd)) {
-          chat.users.push(userToAdd);
-        }
-      });
-    }
-
-    if (removeUsers && Array.isArray(removeUsers)) {
-      removeUsers.forEach((userToRemove) => {
-        chat.users = chat.users.filter((user) => user !== userToRemove);
-      });
+    if (Array.isArray(users)) {
+      chat.users = users;  
     }
 
     if (name) {
