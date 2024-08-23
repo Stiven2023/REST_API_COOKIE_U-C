@@ -16,7 +16,13 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
+    // Parse the body to ensure users is an array
     const { users, name, group } = req.body;
+
+    // Validate that `users` is an array
+    if (!Array.isArray(users)) {
+      return res.status(400).json({ error: 'Users must be an array' });
+    }
 
     if (group) {
       const { image, admins, participants } = group;
@@ -126,7 +132,6 @@ const createChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
-
 
 const getAllChats = async (req, res) => {
   try {
