@@ -1,9 +1,14 @@
+import multer from 'multer';
+import path from 'path';
 import Chat from '../../models/Chat.js';
-import Message from '../../models/Message.js';
 import User from '../../models/User.js';
-import { io } from '../../index.js';
+import Jwt from 'jsonwebtoken';
 import config from '../../config.js';
-import Jwt from "jsonwebtoken";
+import { io } from '../../index.js';
+import { uploadImageChatGroup } from '../../cloudinary.js';
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const createChat = async (req, res) => {
   try {
@@ -11,59 +16,122 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    const { users, name } = req.body;
+    // Parse the body to ensure users is an array
+    const { users, name, group } = req.body;
 
-    if (name) {
-      if (users.length < 3) {
-        return res.status(400).json({ error: 'At least three users are required to create a named chat' });
+    // Validate that `users` is an array
+    if (!Array.isArray(users)) {
+      return res.status(400).json({ error: 'Users must be an array' });
+    }
+
+    if (group) {
+      const { image, admins, participants } = group;
+
+      if (typeof image === 'string') {
+        const result = await uploadImageChatGroup(image);
+        group.image = result.secure_url;
+      } else {
+        return res.status(400).json({ error: 'Image must be a valid URL' });
       }
+
+      if (!admins || admins.length === 0) {
+        return res.status(400).json({ error: 'At least one admin is required' });
+      }
+
+      if (!participants || participants.length === 0) {
+        return res.status(400).json({ error: 'At least one participant is required' });
+      }
+
+      // Ensure the userId is included in admins and participants
+      if (!admins.includes(userId)) {
+        admins.push(userId);
+      }
+
+      if (!participants.includes(userId)) {
+        participants.push(userId);
+      }
+
+      const newChat = new Chat({
+        name: name || '',
+        group: {
+          image: group.image,
+          admins,
+          participants
+        },
+        creatorId: userId,
+        users: participants
+      });
+
+      await newChat.save();
+
+      await User.updateMany(
+        { _id: { $in: participants.map(id => mongoose.Types.ObjectId(id)) } },
+        { $push: { chats: newChat._id } }
+      );
+
+      io.emit('newChat', newChat);
+      res.status(201).json(newChat);
     } else {
-      if (users.length !== 2) {
-        return res.status(400).json({ error: 'Exactly two users are required to create a chat' });
+      // Handle chat creation for individual chats
+      if (name) {
+        if (users.length < 3) {
+          return res.status(400).json({ error: 'At least three users are required to create a named chat' });
+        }
+      } else {
+        if (users.length !== 2) {
+          return res.status(400).json({ error: 'Exactly two users are required to create a chat' });
+        }
       }
+
+      // If there is only one user in the list, add the userId from the token
+      if (users.length === 1) {
+        users.push(userId);
+      }
+
+      // Ensure the userId is included in the users list
+      if (!users.includes(userId)) {
+        return res.status(400).json({ error: 'User ID must be one of the participants' });
+      }
+
+      const userObjectIds = users.map(id => mongoose.Types.ObjectId(id));
+      const participants = await User.find({ _id: { $in: userObjectIds } }, 'username');
+      if (participants.length !== users.length) {
+        return res.status(404).json({ error: 'One or more users not found' });
+      }
+
+      const usernames = participants.map(user => user.username);
+      const chatName = name || usernames.join(', ');
+
+      const existingChat = await Chat.findOne({
+        name: chatName,
+        participants: { $all: userObjectIds }
+      });
+
+      if (existingChat) {
+        return res.status(400).json({ error: 'A chat with the same name and participants already exists' });
+      }
+
+      const newChat = new Chat({
+        name: chatName,
+        participants: userObjectIds,
+        users: userObjectIds,
+        creatorId: userId
+      });
+
+      await newChat.save();
+
+      await User.updateMany(
+        { _id: { $in: userObjectIds } },
+        { $push: { chats: newChat._id } }
+      );
+
+      io.emit('newChat', newChat);
+      res.status(201).json(newChat);
     }
-
-    if (!users.includes(userId)) {
-      return res.status(400).json({ error: 'User ID must be one of the participants' });
-    }
-
-    const participants = await User.find({ _id: { $in: users } }, 'username');
-    if (participants.length !== users.length) {
-      return res.status(404).json({ error: 'One or more users not found' });
-    }
-
-    const usernames = participants.map(user => user.username);
-
-    const chatName = name || usernames.join(', ');
-
-    const existingChat = await Chat.findOne({
-      name: chatName,
-      participants: { $all: users }
-    });
-
-    if (existingChat) {
-      return res.status(400).json({ error: 'A chat with the same name and participants already exists' });
-    }
-
-    const newChat = new Chat({
-      name: chatName,
-      participants: users,
-      users: users
-    });
-
-    await newChat.save();
-
-    await User.updateMany(
-      { _id: { $in: users } },
-      { $push: { chats: newChat._id } }
-    );
-
-    io.emit('newChat', newChat);
-    res.status(201).json(newChat);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
-}
+};
 
 const getAllChats = async (req, res) => {
   try {
@@ -71,14 +139,14 @@ const getAllChats = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    const chats = await Chat.find({ users: userId })
+    const chats = await Chat.find({ users: userId });
 
     res.json(chats);
   } catch (error) {
     console.error("Error getting all chats:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const joinChat = async (req, res) => {
   try {
@@ -122,7 +190,7 @@ const getChatById = async (req, res) => {
     console.error("Error getting chat by ID:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const updateChat = async (req, res) => {
   try {
@@ -131,7 +199,7 @@ const updateChat = async (req, res) => {
     const userId = decoded.id;
 
     const chatId = req.params.chatId;
-    const { name } = req.body;
+    const { name, users, group } = req.body;
 
     const chat = await Chat.findById(chatId);
 
@@ -143,19 +211,47 @@ const updateChat = async (req, res) => {
       return res.status(403).json({ error: 'You are not a member of this chat' });
     }
 
-    if (chat.users.length < 3) {
-      return res.status(403).json({ error: 'This chat does not allow editing unless it has at least 3 participants' });
+    if (name) {
+      chat.name = name;
     }
 
-    chat.name = name;
+    if (Array.isArray(users)) {
+      chat.users = users;
+    }
+
+    if (group && Object.keys(group).length > 0) {
+      const { image, admins, participants } = group;
+
+      if (image) {
+        const result = await uploadImageChatGroup(image);
+        chat.group.image = result.secure_url;
+      }
+
+      if (Array.isArray(admins) && admins.length > 0) {
+        chat.group.admins = admins.includes(userId) ? admins : [...admins, userId];
+      }
+
+      if (Array.isArray(participants) && participants.length > 0) {
+        chat.group.participants = participants.includes(userId) ? participants : [...participants, userId];
+        chat.users = chat.group.participants;
+      }
+    }
+
     await chat.save();
 
-    res.status(200).json({ message: 'Chat name updated successfully' });
+    io.to(chatId).emit('updateChat', {
+      chatId: chat._id,
+      name: chat.name,
+      users: chat.users,
+      group: chat.group
+    });
+
+    res.status(200).json({ message: 'Chat updated successfully', chat: { chatId: chat._id, name: chat.name, users: chat.users, group: chat.group } });
   } catch (error) {
     console.error("Error updating chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
-}
+};
 
 const deleteChat = async (req, res) => {
   try {
@@ -183,7 +279,7 @@ const deleteChat = async (req, res) => {
     console.error("Error deleting chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
-}
+};
 
 const getAllChatsForCharts = async (req, res) => {
   try {
@@ -225,5 +321,4 @@ const getAllChatsForCharts = async (req, res) => {
   }
 };
 
-
-export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts }
+export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts };

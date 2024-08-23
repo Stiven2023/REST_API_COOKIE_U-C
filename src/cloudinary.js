@@ -51,3 +51,9 @@ export async function uploadImageChat(filePath) {
         folder: 'cokieEnterprice/user/chats/images'
     })
 }
+
+export async function uploadImageChatGroup(filePath) {
+    return await cloudinary.uploader.upload(filePath, {
+        folder: 'cokieEnterprice/user/chats/Group/images'
+    })
+}
