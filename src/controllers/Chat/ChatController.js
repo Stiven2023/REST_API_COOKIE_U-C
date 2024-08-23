@@ -1,11 +1,14 @@
+import multer from 'multer';
+import path from 'path';
 import Chat from '../../models/Chat.js';
 import User from '../../models/User.js';
-import Jwt from "jsonwebtoken";
+import Jwt from 'jsonwebtoken';
 import config from '../../config.js';
 import { io } from '../../index.js';
 import { uploadImageChatGroup } from '../../cloudinary.js';
-import multer from 'multer';
 
+// Configuración de almacenamiento para multer (si es necesario)
+const storage = multer.memoryStorage(); // Puedes ajustar esto según tu necesidad
 const upload = multer({ storage });
 
 const createChat = async (req, res) => {
@@ -20,11 +23,7 @@ const createChat = async (req, res) => {
       const { image, admins, participants } = group;
 
       if (typeof image === 'string') {
-        const result = await cloudinary.uploader.upload(image, {
-          folder: 'chat_images',
-          allowed_formats: ['jpg', 'jpeg', 'png'],
-        });
-
+        const result = await uploadImageChatGroup(image);
         group.image = result.secure_url;
       } else {
         return res.status(400).json({ error: 'Image must be a valid URL' });
@@ -121,21 +120,20 @@ const createChat = async (req, res) => {
   }
 };
 
-
 const getAllChats = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    const chats = await Chat.find({ users: userId })
+    const chats = await Chat.find({ users: userId });
 
     res.json(chats);
   } catch (error) {
     console.error("Error getting all chats:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const joinChat = async (req, res) => {
   try {
@@ -179,7 +177,7 @@ const getChatById = async (req, res) => {
     console.error("Error getting chat by ID:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 const updateChat = async (req, res) => {
   try {
@@ -188,7 +186,7 @@ const updateChat = async (req, res) => {
     const userId = decoded.id;
 
     const chatId = req.params.chatId;
-    const { name, users, group } = req.body; 
+    const { name, users, group } = req.body;
 
     const chat = await Chat.findById(chatId);
 
@@ -212,10 +210,7 @@ const updateChat = async (req, res) => {
       const { image, admins, participants } = group;
 
       if (image) {
-        const result = await uploadImageChatGroup(image, {
-          folder: 'chat_images',
-          allowed_formats: ['jpg', 'jpeg', 'png'],
-        });
+        const result = await uploadImageChatGroup(image);
         chat.group.image = result.secure_url;
       }
 
@@ -271,7 +266,7 @@ const deleteChat = async (req, res) => {
     console.error("Error deleting chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
-}
+};
 
 const getAllChatsForCharts = async (req, res) => {
   try {
@@ -313,5 +308,4 @@ const getAllChatsForCharts = async (req, res) => {
   }
 };
 
-
-export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts }
+export { createChat, joinChat, updateChat, deleteChat, getAllChats, getChatById, getAllChatsForCharts };
