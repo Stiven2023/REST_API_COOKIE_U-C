@@ -58,7 +58,7 @@ const createChat = async (req, res) => {
       await newChat.save();
 
       await User.updateMany(
-        { _id: { $in: participants.map(id => mongoose.Types.ObjectId(id)) } }, // Asegúrate de convertir los IDs
+        { _id: { $in: participants.map(id => mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
       );
 
