@@ -5,7 +5,6 @@ import config from '../../config.js';
 import { io } from '../../index.js';
 import { uploadImageChatGroup } from '../../cloudinary.js';
 import multer from 'multer';
-import streamifier from 'streamifier';
 
 const upload = multer({ storage });
 
