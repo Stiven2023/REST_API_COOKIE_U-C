@@ -690,6 +690,23 @@ class PostController {
       });
     }
   }
+    /**
+   * @method getPostsByUserId
+   * @description Obtiene publicaciones de un usuario especificado.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de publicaciones del usuario especificado
+   */
+  static async getPostsByUserId(req, res) {
+    try {
+      const { userId } = req.params;
+      const posts = await PostModel.find({ userId }).lean();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to retrieve posts" });
+    }
+  }
+
 }
 
 // * Exportar el controlador de publicaciones
