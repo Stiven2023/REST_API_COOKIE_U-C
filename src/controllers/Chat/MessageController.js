@@ -31,7 +31,7 @@ const createMessage = async (req, res) => {
     const message = new Message(messageData);
 
     if (req.files?.image) {
-      const result = await uploadImage(req.files.image.tempFilePath);
+      const result = await uploadImageChat(req.files.image.tempFilePath);
       message.mediaUrl = {
         public_id: result.public_id,
         secure_url: result.secure_url,
