@@ -7,8 +7,7 @@ import config from '../../config.js';
 import { io } from '../../index.js';
 import { uploadImageChatGroup } from '../../cloudinary.js';
 
-// Configuración de almacenamiento para multer (si es necesario)
-const storage = multer.memoryStorage(); // Puedes ajustar esto según tu necesidad
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 const createChat = async (req, res) => {
@@ -59,7 +58,7 @@ const createChat = async (req, res) => {
       await newChat.save();
 
       await User.updateMany(
-        { _id: { $in: participants } },
+        { _id: { $in: participants.map(id => mongoose.Types.ObjectId(id)) } }, // Asegúrate de convertir los IDs
         { $push: { chats: newChat._id } }
       );
 
@@ -80,7 +79,8 @@ const createChat = async (req, res) => {
         return res.status(400).json({ error: 'User ID must be one of the participants' });
       }
 
-      const participants = await User.find({ _id: { $in: users } }, 'username');
+      const userObjectIds = users.map(id => mongoose.Types.ObjectId(id));
+      const participants = await User.find({ _id: { $in: userObjectIds } }, 'username');
       if (participants.length !== users.length) {
         return res.status(404).json({ error: 'One or more users not found' });
       }
@@ -91,7 +91,7 @@ const createChat = async (req, res) => {
 
       const existingChat = await Chat.findOne({
         name: chatName,
-        participants: { $all: users }
+        participants: { $all: userObjectIds }
       });
 
       if (existingChat) {
@@ -100,15 +100,15 @@ const createChat = async (req, res) => {
 
       const newChat = new Chat({
         name: chatName,
-        participants: users,
-        users: users,
+        participants: userObjectIds,
+        users: userObjectIds,
         creatorId: userId
       });
 
       await newChat.save();
 
       await User.updateMany(
-        { _id: { $in: users } },
+        { _id: { $in: userObjectIds } },
         { $push: { chats: newChat._id } }
       );
 
