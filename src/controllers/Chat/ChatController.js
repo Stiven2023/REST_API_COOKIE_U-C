@@ -36,6 +36,7 @@ const createChat = async (req, res) => {
         return res.status(400).json({ error: 'At least one participant is required' });
       }
 
+      // Ensure the userId is included in admins and participants
       if (!admins.includes(userId)) {
         admins.push(userId);
       }
@@ -65,6 +66,7 @@ const createChat = async (req, res) => {
       io.emit('newChat', newChat);
       res.status(201).json(newChat);
     } else {
+      // Handle chat creation for individual chats
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
@@ -75,6 +77,12 @@ const createChat = async (req, res) => {
         }
       }
 
+      // If there is only one user in the list, add the userId from the token
+      if (users.length === 1) {
+        users.push(userId);
+      }
+
+      // Ensure the userId is included in the users list
       if (!users.includes(userId)) {
         return res.status(400).json({ error: 'User ID must be one of the participants' });
       }
@@ -86,7 +94,6 @@ const createChat = async (req, res) => {
       }
 
       const usernames = participants.map(user => user.username);
-
       const chatName = name || usernames.join(', ');
 
       const existingChat = await Chat.findOne({
@@ -119,6 +126,7 @@ const createChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
+
 
 const getAllChats = async (req, res) => {
   try {
