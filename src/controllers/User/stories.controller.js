@@ -219,7 +219,7 @@ const getViewStory = async (req, res) => { // Obtener el historia vista por el u
    return;
   }
 
-  io.to(storyId).emit('storyViewed', story);
+  io.emit('storyViewed');
   res.status(200).json(story.isViewed);
  } catch (error) {
   console.error("Error viewing story:", error);
