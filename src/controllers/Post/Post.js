@@ -28,7 +28,6 @@ import moment from "moment";
 // * Importar socket.io para la gestión de eventos
 import { io } from "../../index.js";
 
-
 // * Definir la clase PostController para manejar las publicaciones
 class PostController {
   /**
@@ -690,7 +689,7 @@ class PostController {
       });
     }
   }
-    /**
+  /**
    * @method getPostsByUserId
    * @description Obtiene publicaciones de un usuario especificado.
    * @param {Object} req - La solicitud HTTP
@@ -707,6 +706,110 @@ class PostController {
     }
   }
 
+  /**
+   * @method getReportedPosts
+   * @description Obtiene todos los posts que han sido reportados.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Lista de posts reportados
+   */
+  static async getReportedPosts(req, res) {
+    try {
+      // Obtener todos los posts que tienen al menos un reporte
+      const reportedPosts = await PostModel.find({
+        "reports.0": { $exists: true },
+      })
+        .populate("userId")
+        .lean();
+
+      if (reportedPosts.length === 0) {
+        return res.status(404).json({ message: "No reported posts found" });
+      }
+
+      res.json(reportedPosts);
+    } catch (error) {
+      res.status(500).json({
+        Error: "Failed to retrieve reported posts",
+        Details: error.message,
+      });
+    }
+  }
+
+  /**
+   * @method repostPost
+   * @description Permite a un usuario repostear una publicación de otro usuario, añadiendo contenido personalizado si se proporciona.
+   * @param {Object} req - La solicitud HTTP
+   * @param {Object} res - La respuesta HTTP
+   * @returns {Object} - Mensaje de éxito y el post repostado
+   */
+  static async repostPost(req, res) {
+    const { postId } = req.params;
+    const { customContent } = req.body; // Contenido personalizado para el repost (opcional)
+
+    const token = req.headers["x-access-token"];
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, config.secret);
+    } catch (error) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const userId = decoded.id;
+
+    try {
+      // Obtener el post original
+      const originalPost = await PostModel.findById(postId).lean();
+      if (!originalPost) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      // Crear el nuevo post con el contenido personalizado (si existe) y el contenido original
+      const newPostContent = customContent
+        ? `${customContent}\n\n${originalPost.content}`
+        : originalPost.content;
+
+      const newPost = new PostModel({
+        content: newPostContent, // Usar el contenido combinado o solo el original
+        mediaUrl: originalPost.mediaUrl,
+        image: originalPost.image,
+        userId: userId,
+        originalPost: originalPost._id, // Asegúrate de guardar el ID del post original aquí
+        createdAt: new Date(),
+      });
+
+      // Guardar el nuevo post
+      await newPost.save();
+
+      // Guardar los datos del usuario que creó el post original
+      const originalPostUser = await User.findById(originalPost.userId).lean();
+      if (!originalPostUser) {
+        return res.status(404).json({ error: "Original post user not found" });
+      }
+
+      res.json({
+        message: "Post reposted successfully",
+        post: newPost,
+        originalPostUser: {
+          id: originalPostUser._id,
+          username: originalPostUser.username,
+          email: originalPostUser.email,
+          role: originalPostUser.role,
+          status: originalPostUser.status,
+          fullname: originalPostUser.fullname,
+          image: originalPostUser.image?.secure_url || null,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Failed to repost post",
+        details: error.message,
+      });
+    }
+  }
 }
 
 // * Exportar el controlador de publicaciones

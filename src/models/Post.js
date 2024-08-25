@@ -49,7 +49,6 @@ const likeSchema = new Schema({
   },
 });
 
-
 const commentSchema = new Schema({
   content: {
     type: String,
@@ -117,6 +116,16 @@ const postSchema = new Schema(
         ref: "User",
       },
     ],
+    originalPost: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      required: false,
+    },
+    originalPostUser: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      username: String,
+      email: String,
+    },
     reports: [reportPostSchema],
     likes: [likeSchema],
     comments: [commentSchema],
