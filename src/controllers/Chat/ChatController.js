@@ -16,63 +16,63 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // Parse the body to ensure users is an array
-    const { users, name, group } = req.body;
+    // Parsing the users array from the form data
+    const users = JSON.parse(req.body.users);
+    const name = req.body.name;
+    let group = req.body.group ? JSON.parse(req.body.group) : null;
 
-    // Validate that `users` is an array
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Users must be an array' });
     }
 
     if (group) {
-      const { image, admins, participants } = group;
+      let imageUrl = '';
 
-      if (typeof image === 'string') {
-        const result = await uploadImageChatGroup(image);
-        group.image = result.secure_url;
+      // If the image is provided, handle the upload
+      if (req.file) {
+        const result = await uploadImageChatGroup(req.file.path);
+        imageUrl = result.secure_url;
       } else {
-        return res.status(400).json({ error: 'Image must be a valid URL' });
+        return res.status(400).json({ error: 'Image is required for group chats' });
       }
 
-      if (!admins || admins.length === 0) {
+      if (!group.admins || group.admins.length === 0) {
         return res.status(400).json({ error: 'At least one admin is required' });
       }
 
-      if (!participants || participants.length === 0) {
+      if (!group.participants || group.participants.length === 0) {
         return res.status(400).json({ error: 'At least one participant is required' });
       }
 
-      // Ensure the userId is included in admins and participants
-      if (!admins.includes(userId)) {
-        admins.push(userId);
+      if (!group.admins.includes(userId)) {
+        group.admins.push(userId);
       }
 
-      if (!participants.includes(userId)) {
-        participants.push(userId);
+      if (!group.participants.includes(userId)) {
+        group.participants.push(userId);
       }
 
       const newChat = new Chat({
         name: name || '',
         group: {
-          image: group.image,
-          admins,
-          participants
+          image: imageUrl,
+          admins: group.admins,
+          participants: group.participants,
         },
         creatorId: userId,
-        users: participants
+        users: group.participants,
       });
 
       await newChat.save();
 
       await User.updateMany(
-        { _id: { $in: participants.map(id => mongoose.Types.ObjectId(id)) } },
+        { _id: { $in: group.participants.map(id => mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
       );
 
       io.emit('newChat', newChat);
       res.status(201).json(newChat);
     } else {
-      // Handle chat creation for individual chats
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
@@ -83,12 +83,6 @@ const createChat = async (req, res) => {
         }
       }
 
-      // If there is only one user in the list, add the userId from the token
-      if (users.length === 1) {
-        users.push(userId);
-      }
-
-      // Ensure the userId is included in the users list
       if (!users.includes(userId)) {
         return res.status(400).json({ error: 'User ID must be one of the participants' });
       }
@@ -104,7 +98,7 @@ const createChat = async (req, res) => {
 
       const existingChat = await Chat.findOne({
         name: chatName,
-        participants: { $all: userObjectIds }
+        users: { $all: userObjectIds },
       });
 
       if (existingChat) {
@@ -113,9 +107,8 @@ const createChat = async (req, res) => {
 
       const newChat = new Chat({
         name: chatName,
-        participants: userObjectIds,
         users: userObjectIds,
-        creatorId: userId
+        creatorId: userId,
       });
 
       await newChat.save();
