@@ -35,6 +35,10 @@ const ChatSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  deleted: {
+    type: Object,
+    default: null,
   }
 }, {
   timestamps: true,

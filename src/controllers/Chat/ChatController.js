@@ -125,6 +125,7 @@ const createChat = async (req, res) => {
   }
 };
 
+
 const getAllChats = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
@@ -258,21 +259,22 @@ const deleteChat = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
-    if (!chat.users.includes(userId)) {
-      return res.status(403).json({ error: 'You are not authorized to delete this chat' });
+    if (chat.creatorId === userId || chat.group.admins.includes(userId)) {
+      
+      await Chat.findByIdAndDelete(chatId);
+      io.emit('chatDeleted', chatId);
+      res.json({ message: 'Chat deleted successfully' });
+    } else {
+      
+      chat.deleted = { by: userId, at: new Date() };
+      await chat.save();
+      res.json({ message: 'Chat deleted for you' });
     }
-
-    await Chat.findByIdAndDelete(chatId);
-
-    io.emit('chatDeleted', chatId);
-
-    res.json({ message: 'Chat deleted successfully' });
   } catch (error) {
     console.error("Error deleting chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
-
 const getAllChatsForCharts = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
