@@ -15,10 +15,11 @@ const createChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
     const decoded = Jwt.verify(token, config.secret);
-    const userId = decoded.id;
+    const userId = new mongoose.Types.ObjectId(decoded.id);
 
-    const users = JSON.parse(req.body.users);
-    const name = req.body.name;
+    // Asegúrate de que 'users' y 'group' existan en req.body antes de parsearlos
+    const users = req.body.users ? JSON.parse(req.body.users) : [];
+    const name = req.body.name || ''; // Nombre opcional
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
     if (!Array.isArray(users)) {
@@ -43,12 +44,12 @@ const createChat = async (req, res) => {
         return res.status(400).json({ error: 'At least one participant is required' });
       }
 
-      if (!group.admins.includes(userId)) {
-        group.admins.push(userId);
+      if (!group.admins.includes(userId.toString())) {
+        group.admins.push(userId.toString());
       }
 
-      if (!group.participants.includes(userId)) {
-        group.participants.push(userId);
+      if (!group.participants.includes(userId.toString())) {
+        group.participants.push(userId.toString());
       }
 
       const newChat = new Chat({
@@ -58,7 +59,7 @@ const createChat = async (req, res) => {
           admins: group.admins.map(id => new mongoose.Types.ObjectId(id)),
           participants: group.participants.map(id => new mongoose.Types.ObjectId(id)),
         },
-        creatorId: new mongoose.Types.ObjectId(userId),
+        creatorId: userId,
         users: group.participants.map(id => new mongoose.Types.ObjectId(id)),
       });
 
@@ -82,7 +83,7 @@ const createChat = async (req, res) => {
         }
       }
 
-      if (!users.includes(userId)) {
+      if (!users.includes(userId.toString())) {
         return res.status(400).json({ error: 'User ID must be one of the participants' });
       }
 
@@ -107,7 +108,7 @@ const createChat = async (req, res) => {
       const newChat = new Chat({
         name: chatName,
         users: userObjectIds,
-        creatorId: new mongoose.Types.ObjectId(userId),
+        creatorId: userId,
       });
 
       await newChat.save();
