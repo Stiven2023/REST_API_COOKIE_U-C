@@ -55,17 +55,17 @@ const createChat = async (req, res) => {
         name: name || '',
         group: {
           image: imageUrl,
-          admins: group.admins,
-          participants: group.participants,
+          admins: group.admins.map(id => new mongoose.Types.ObjectId(id)),
+          participants: group.participants.map(id => new mongoose.Types.ObjectId(id)),
         },
-        creatorId: userId,
-        users: group.participants,
+        creatorId: new mongoose.Types.ObjectId(userId),
+        users: group.participants.map(id => new mongoose.Types.ObjectId(id)),
       });
 
       await newChat.save();
 
       await User.updateMany(
-        { _id: { $in: group.participants.map(id => mongoose.Types.ObjectId(id)) } },
+        { _id: { $in: group.participants.map(id => new mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
       );
 
@@ -86,7 +86,7 @@ const createChat = async (req, res) => {
         return res.status(400).json({ error: 'User ID must be one of the participants' });
       }
 
-      const userObjectIds = users.map(id => mongoose.Types.ObjectId(id));
+      const userObjectIds = users.map(id => new mongoose.Types.ObjectId(id));
       const participants = await User.find({ _id: { $in: userObjectIds } }, 'username');
       if (participants.length !== users.length) {
         return res.status(404).json({ error: 'One or more users not found' });
@@ -107,7 +107,7 @@ const createChat = async (req, res) => {
       const newChat = new Chat({
         name: chatName,
         users: userObjectIds,
-        creatorId: userId,
+        creatorId: new mongoose.Types.ObjectId(userId),
       });
 
       await newChat.save();
