@@ -4,6 +4,7 @@ import Chat from '../../models/Chat.js';
 import User from '../../models/User.js';
 import Jwt from 'jsonwebtoken';
 import config from '../../config.js';
+import mongoose from "mongoose"
 import { io } from '../../index.js';
 import { uploadImageChatGroup } from '../../cloudinary.js';
 
@@ -16,7 +17,6 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // Parsing the users array from the form data
     const users = JSON.parse(req.body.users);
     const name = req.body.name;
     let group = req.body.group ? JSON.parse(req.body.group) : null;
@@ -28,7 +28,6 @@ const createChat = async (req, res) => {
     if (group) {
       let imageUrl = '';
 
-      // If the image is provided, handle the upload
       if (req.file) {
         const result = await uploadImageChatGroup(req.file.path);
         imageUrl = result.secure_url;
