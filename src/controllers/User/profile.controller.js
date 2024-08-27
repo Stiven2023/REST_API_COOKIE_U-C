@@ -10,7 +10,7 @@ const getProfile = async (req, res) => {
   try {
     const token = req.headers["x-access-token"];
     const decoded = jwt.verify(token, config.secret);
-    const user = await User.findById(decoded.id).select("-password").populate('likes');
+    const user = await User.findById(decoded.id).select("-password").populate('likes').populate('role');
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -12,9 +12,12 @@ postRoutes.get("/analytics/:userId", PostController.getPostAnalytics); //* Get p
 
 postRoutes.get("/stats-platform", PostController.getPlatformStats);
 
+postRoutes.get("/reports",PostController.getReportedPosts)
+
 postRoutes.get("/save", PostController.getMySavedPosts); //* Recover my saved posts
 postRoutes.post("/save/:postId", PostController.savePost); //* Save post
 postRoutes.delete("/save/:postId", PostController.deleteSavedPost);
+postRoutes.post('/repost/:postId', PostController.repostPost);
 postRoutes.post("/reports/:postId", PostController.reportPost); //* Report post
 
 postRoutes.get("/users-with-posts", PostController.getAllUsersWithPosts); //* Recover all users with their posts
