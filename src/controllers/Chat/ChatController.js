@@ -17,9 +17,8 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = new mongoose.Types.ObjectId(decoded.id);
 
-    // Asegúrate de que 'users' y 'group' existan en req.body antes de parsearlos
     const users = req.body.users ? JSON.parse(req.body.users) : [];
-    const name = req.body.name || ''; // Nombre opcional
+    const name = req.body.name || '';
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
     if (!Array.isArray(users)) {
