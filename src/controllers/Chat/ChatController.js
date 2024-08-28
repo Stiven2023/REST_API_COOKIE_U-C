@@ -31,7 +31,7 @@ const createChat = async (req, res) => {
       console.log("image", group.image)
 
       if (req.file?.image) {
-        const result = await uploadImageChatGroup(req.file.image.path);
+        const result = await uploadImageChatGroup(req.file.path);
         imageUrl = result.secure_url;
       } else {
         return res.status(400).json({ error: 'Image is required for group chats' });
