@@ -24,30 +24,26 @@ const deleteUser = async (req, res) => {
 
 const changeRole = async (req, res) => {
   try {
-    const token = req.headers["x-access-token"];
-    const decoded = Jwt.verify(token, config.secret);
+    const { userId } = req.params;
+    const { role } = req.body;
 
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ error: "Only admin can change user role" });
-    }
+    const user = await User.findById(userId);
 
-    const { userId, roleId } = req.body;
-    const userToChange = await User.findById(userId);
-
-    if (!userToChange) {
+    if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const role = await Role.findById(roleId);
-
-    if (!role) {
-      return res.status(404).json({ error: "Role not found" });
+    if (role) {
+      const foundRoles = await Role.find({ name: { $in: role } });
+      user.role = foundRoles.map(role => role._id);
+    } else {
+      const role = await Role.findOne({ name: "user" });
+      user.role = [role._id];
     }
 
-    userToChange.role = [role._id];
-    await userToChange.save();
+    await user.save();
 
-    io.emit('userUpdate', userToChange);
+    io.emit('userUpdate');
     res.status(200).json({ message: "User role changed successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -62,7 +58,7 @@ const getAllUsers = async (req, res) => {
     const users = await User.find({ _id: { $ne: decoded.id } }).populate("role");
 
     res.json(users);
-    
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error fetching users", Details: error });
@@ -221,7 +217,7 @@ const unfollowUser = async (req, res) => {
 
 const getFollowers = async (req, res) => {
   try {
-    const { userId } = req.params; 
+    const { userId } = req.params;
 
     const user = await User.findById(userId).populate('followers');
 
@@ -270,7 +266,7 @@ const addFriend = async (req, res) => {
     await friend.save();
     await user.save();
 
-    io.emit('friendAdded',{ userId: user._id, friendId: friend._id });
+    io.emit('friendAdded', { userId: user._id, friendId: friend._id });
     res.json({ message: "Friend added successfully." });
   } catch (error) {
     res.status(500).json({ error: "Error adding friend" });
@@ -295,7 +291,7 @@ const removeFriend = async (req, res) => {
     await user.save();
     await friend.save();
 
-    io.emit('friendRemoved',{ userId: user._id, friendId: friend._id });
+    io.emit('friendRemoved', { userId: user._id, friendId: friend._id });
     res.json({ message: "Friend removed successfully." });
   } catch (error) {
     res.status(500).json({ error: "Error removing friend" });
@@ -308,7 +304,7 @@ const getFriends = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
 
     const { userId } = req.params;
-		const user = await User.findById(userId).populate('friends');
+    const user = await User.findById(userId).populate('friends');
 
     res.json(user.friends);
   } catch (error) {
@@ -345,4 +341,24 @@ const searchUsers = async (req, res) => {
   }
 };
 
-export { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole };
+const verified = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.find(userId);
+
+    if (user.verified === false) {
+      user.verified = true;
+      await user.save();
+    } else if (user.verified === true) {
+      user.verified = false;
+      await user.save();
+    };
+
+    io.emit('userUpdate', user);
+    res.status(200).json({ message: "User verified successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching verified" });
+  }
+};
+
+export { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole, verified };
