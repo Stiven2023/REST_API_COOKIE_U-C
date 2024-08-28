@@ -119,25 +119,15 @@ const updateStatus = async (req, res) => {
     const { userId } = req.params;
     const { status } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { status },
-      { new: true }
-    );
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    try {
-      await sendUpdateStatusEmail(user.email, user.username, status);
-    } catch (emailError) {
-      console.error("Error sending update status email:", emailError);
-      return res.status(200).json({
-        message: "User status updated successfully, but failed to send email",
-        user,
-      });
-    }
+    user.status = status;
+    await user.save();
+    await sendUpdateStatusEmail(user.email, user.username, status);
 
     io.emit('userUpdate', user);
     res.status(200).json({ message: "User status updated successfully", user });
