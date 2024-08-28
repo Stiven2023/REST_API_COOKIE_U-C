@@ -28,6 +28,8 @@ const createChat = async (req, res) => {
     if (group) {
       let imageUrl = '';
 
+      console.log("image", group.image)
+
       if (req.file?.image) {
         const result = await uploadImageChatGroup(req.file.image.path);
         imageUrl = result.secure_url;
