@@ -1,5 +1,4 @@
 import multer from 'multer';
-import path from 'path';
 import Chat from '../../models/Chat.js';
 import User from '../../models/User.js';
 import Jwt from 'jsonwebtoken';
@@ -28,11 +27,10 @@ const createChat = async (req, res) => {
     if (group) {
       let imageUrl = '';
 
-      if (req.body.image) {
+      // No se requiere imagen para el chat grupal
+      if (req.file?.path) {
         const result = await uploadImageChatGroup(req.file.path);
         imageUrl = result.secure_url;
-      } else {
-        return res.status(400).json({ error: 'Image is required for group chats' });
       }
 
       if (!group.admins || group.admins.length === 0) {
@@ -54,7 +52,7 @@ const createChat = async (req, res) => {
       const newChat = new Chat({
         name: name || '',
         group: {
-          image: imageUrl,
+          image: imageUrl || '',
           admins: group.admins.map(id => new mongoose.Types.ObjectId(id)),
           participants: group.participants.map(id => new mongoose.Types.ObjectId(id)),
         },
@@ -124,6 +122,7 @@ const createChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
+
 
 
 const getAllChats = async (req, res) => {
