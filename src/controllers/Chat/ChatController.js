@@ -27,24 +27,15 @@ const createChat = async (req, res) => {
     if (group) {
       let imageUrl = '';
 
-      // No se requiere imagen para el chat grupal
+      // Procesar la imagen si se proporciona
       if (req.file?.path) {
         const result = await uploadImageChatGroup(req.file.path);
         imageUrl = result.secure_url;
       }
 
-      if (!group.admins || group.admins.length === 0) {
-        return res.status(400).json({ error: 'At least one admin is required' });
-      }
-
-      if (!group.participants || group.participants.length === 0) {
-        return res.status(400).json({ error: 'At least one participant is required' });
-      }
-
-      if (!group.admins.includes(userId.toString())) {
-        group.admins.push(userId.toString());
-      }
-
+      // Asegurar que solo el userId sea admin
+      group.admins = [userId.toString()];
+      // Asegurar que el userId esté en la lista de participantes
       if (!group.participants.includes(userId.toString())) {
         group.participants.push(userId.toString());
       }
@@ -70,6 +61,7 @@ const createChat = async (req, res) => {
       io.emit('newChat', newChat);
       res.status(201).json(newChat);
     } else {
+      // Validaciones para chats individuales
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
@@ -122,7 +114,6 @@ const createChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
-
 
 
 const getAllChats = async (req, res) => {
