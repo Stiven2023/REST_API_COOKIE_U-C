@@ -60,8 +60,8 @@ const userSchema = new mongoose.Schema({
     },
     verified: {
         type: String,
-        enum: ['active', 'inactive'],
-        default: 'inactive'
+        enum: ['true', 'false'],
+        default: 'false'
     },
     chats: [{
         type: mongoose.Schema.Types.ObjectId,
