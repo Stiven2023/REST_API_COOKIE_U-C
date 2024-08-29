@@ -333,16 +333,12 @@ const searchUsers = async (req, res) => {
 
 const verified = async (req, res) => {
   try {
+    const { verified } = req.body;
     const { userId } = req.params;
     const user = await User.find(userId);
 
-    if (user.verified === false) {
-      user.verified = true;
-      await user.save();
-    } else if (user.verified === true) {
-      user.verified = false;
-      await user.save();
-    };
+    user.verified = verified;
+    await user.save();
 
     io.emit('userUpdate', user);
     res.status(200).json({ message: "User verified successfully" });
