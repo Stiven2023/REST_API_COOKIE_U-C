@@ -27,15 +27,13 @@ const createChat = async (req, res) => {
     if (group) {
       let imageUrl = '';
 
-      // Procesar la imagen si se proporciona
       if (req.file?.path) {
         const result = await uploadImageChatGroup(req.file.path);
         imageUrl = result.secure_url;
       }
 
-      // Asegurar que solo el userId sea admin
       group.admins = [userId.toString()];
-      // Asegurar que el userId esté en la lista de participantes
+
       if (!group.participants.includes(userId.toString())) {
         group.participants.push(userId.toString());
       }
