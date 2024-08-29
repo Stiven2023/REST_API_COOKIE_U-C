@@ -331,24 +331,24 @@ const searchUsers = async (req, res) => {
   }
 };
 
-const verified = async (req, res) => {
+const userVerified = async (req, res) => {
   try {
+    const { verified } = req.body;
     const { userId } = req.params;
-    const user = await User.find(userId);
+    const user = await User.findById(userId);
 
-    if (user.verified === false) {
-      user.verified = true;
-      await user.save();
-    } else if (user.verified === true) {
-      user.verified = false;
-      await user.save();
-    };
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.verified = verified;
+    await user.save();
 
     io.emit('userUpdate', user);
-    res.status(200).json({ message: "User verified successfully" });
+    res.status(200).json({ message: "User verified successfully", user });
   } catch (error) {
-    res.status(500).json({ error: "Error fetching verified" });
+    res.status(500).json({ error: "Error updating user verified" });
   }
 };
 
-export { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole, verified };
+export { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole, userVerified };

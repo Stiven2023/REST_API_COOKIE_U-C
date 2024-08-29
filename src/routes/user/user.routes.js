@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole, verified } from '../../controllers/User/user.controller.js';
+import { getAllUsers, getFollowers, getFollowing, getFriends, getUsersById, getUsersByUsername, searchUsers, deleteUser, updateStatus, updateUser, followUser, unfollowUser, addFriend, removeFriend, changeRole, userVerified } from '../../controllers/User/user.controller.js';
 import { verifyToken, isUser, isAdmin, isModeratorOrAdmin } from '../../middlewares/authJwt.js';
 
 const router = express.Router();
@@ -7,7 +7,7 @@ const router = express.Router();
 // Admin
 router.delete('/:userId', [verifyToken, isAdmin], deleteUser);
 router.put('/role/:userId', [verifyToken, isAdmin], changeRole);
-router.put('/verified/:userId', [verifyToken, isAdmin], verified);
+router.put('/verified/:userId', [verifyToken, isAdmin], userVerified);
 
 // Moder or Admin
 router.get('/', [verifyToken], getAllUsers);

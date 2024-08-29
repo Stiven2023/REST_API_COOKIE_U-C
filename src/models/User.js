@@ -59,8 +59,9 @@ const userSchema = new mongoose.Schema({
         default: ''
     },
     verified: {
-        type: Boolean,
-        default: false
+        type: String,
+        enum: ['true', 'false'],
+        default: 'false'
     },
     chats: [{
         type: mongoose.Schema.Types.ObjectId,
