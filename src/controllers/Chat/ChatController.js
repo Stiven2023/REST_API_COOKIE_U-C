@@ -58,10 +58,11 @@ const createChat = async (req, res) => {
         { $push: { chats: newChat._id } }
       );
 
+      console.log(newChat)
+
       io.emit('newChat', newChat);
       res.status(201).json(newChat);
     } else {
-      // Validaciones para chats individuales
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
