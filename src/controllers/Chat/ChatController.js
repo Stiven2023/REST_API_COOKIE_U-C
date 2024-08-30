@@ -5,7 +5,7 @@ import Jwt from 'jsonwebtoken';
 import config from '../../config.js';
 import mongoose from "mongoose"
 import { io } from '../../index.js';
-import { uploadImageChatGroup } from '../../cloudinary.js';
+import { uploadImage } from '../../cloudinary.js';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -28,7 +28,7 @@ const createChat = async (req, res) => {
       let imageUrl = '';
 
       if (req.file?.path) {
-        const result = await uploadImageChatGroup(req.file.path);
+        const result = await uploadImage(req.file.path);
         imageUrl = result.secure_url;
       }
 
