@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 
 const GroupSchema = new Schema({
   image: {
-    type: string,
+    type: String,
     require: false
   },
   admins: [{
