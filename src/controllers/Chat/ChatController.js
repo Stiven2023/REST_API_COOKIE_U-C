@@ -121,7 +121,13 @@ const getAllChats = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    const chats = await Chat.find({ users: userId });
+    // Encuentra todos los chats donde el usuario es parte, pero que no han sido marcados como eliminados por ese usuario
+    const chats = await Chat.find({
+      users: userId,
+      $or: [
+        { "deleted.by": { $ne: userId } }, // El chat no ha sido eliminado por el usuario
+      ]
+    });
 
     res.json(chats);
   } catch (error) {
@@ -129,6 +135,7 @@ const getAllChats = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 const joinChat = async (req, res) => {
   try {
@@ -248,22 +255,27 @@ const deleteChat = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
-    if (chat.creatorId === userId || chat.group.admins.includes(userId)) {
-      
+    const isCreator = chat.creatorId === userId;
+    const isAdmin = chat.group?.admins?.includes(userId);
+
+    if (isCreator || isAdmin) {
+      // Elimina el chat si el usuario es el creador o un administrador
       await Chat.findByIdAndDelete(chatId);
       io.emit('chatDeleted', chatId);
-      res.json({ message: 'Chat deleted successfully' });
+      return res.json({ message: 'Chat deleted successfully' });
     } else {
-      
+      // Marca el chat como eliminado para el usuario, pero no lo borra completamente
       chat.deleted = { by: userId, at: new Date() };
       await chat.save();
-      res.json({ message: 'Chat deleted for you' });
+      return res.json({ message: 'Chat deleted for you' });
     }
   } catch (error) {
     console.error("Error deleting chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
+
+
 const getAllChatsForCharts = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
