@@ -212,7 +212,7 @@ const updateChat = async (req, res) => {
       const { image, admins, participants } = group;
 
       if (image) {
-        const result = await uploadImageChatGroup(image);
+        const result = await uploadImage(image);
         chat.group.image = result.secure_url;
       }
 
@@ -259,12 +259,10 @@ const deleteChat = async (req, res) => {
     const isAdmin = chat.group?.admins?.includes(userId);
 
     if (isCreator || isAdmin) {
-      // Elimina el chat si el usuario es el creador o un administrador
       await Chat.findByIdAndDelete(chatId);
       io.emit('chatDeleted', chatId);
       return res.json({ message: 'Chat deleted successfully' });
     } else {
-      // Marca el chat como eliminado para el usuario, pero no lo borra completamente
       chat.deleted = { by: userId, at: new Date() };
       await chat.save();
       return res.json({ message: 'Chat deleted for you' });
