@@ -1,7 +1,7 @@
 import Message from '../../models/Message.js';
 import Chat from '../../models/Chat.js';
 import { io } from '../../index.js';
-import { uploadImage } from '../../cloudinary.js';
+import { uploadImageChat } from '../../cloudinary.js';
 import jwt from 'jsonwebtoken';
 import config from '../../config.js'
 import User from '../../models/User.js';
