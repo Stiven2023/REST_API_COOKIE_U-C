@@ -1,12 +1,10 @@
 import mongoose from 'mongoose';
+import { string } from 'zod';
 
 const Schema = mongoose.Schema;
 
 const GroupSchema = new Schema({
-  image: {
-    public_id: String,
-    secure_url: String,
-  },
+  image: string,
   admins: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
