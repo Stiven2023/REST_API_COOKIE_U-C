@@ -4,7 +4,10 @@ import { string } from 'zod';
 const Schema = mongoose.Schema;
 
 const GroupSchema = new Schema({
-  image: string,
+  image: {
+    type: string,
+    require: false
+  },
   admins: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
