@@ -18,6 +18,20 @@ const createChat = async (req, res) => {
 
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
+
+    // Subir imagen si existe antes de parsear group
+    let imageUrl = '';
+
+    if (req.file && req.file.path) {
+      try {
+        const result = await uploadImage(req.file.path);
+        imageUrl = result.secure_url;
+      } catch (error) {
+        return res.status(500).json({ error: 'Failed to upload image', errorMessage: error.message });
+      }
+    }
+
+    // Parsear el objeto group después de subir la imagen
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
     // Validar que users sea un array
@@ -27,18 +41,7 @@ const createChat = async (req, res) => {
 
     // Si se está creando un chat grupal
     if (group) {
-      let imageUrl = '';
-
-      // Subir imagen si existe
-
-      console.log(group)
-
-      console.log(req.file.path)
-
-      if (req.file?.path) {
-        const result = await uploadImage(req.file.path);
-        imageUrl = result.secure_url;
-      }
+      console.log(group);
 
       // Asegurarse de que el usuario creador sea admin y participante
       group.admins = [userId.toString()];
@@ -71,7 +74,7 @@ const createChat = async (req, res) => {
       io.emit('newChat', newChat);
       return res.status(201).json(newChat);
     } else {
- 
+      // Si se está creando un chat individual
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
