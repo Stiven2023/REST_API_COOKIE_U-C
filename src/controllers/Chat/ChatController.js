@@ -20,18 +20,22 @@ const createChat = async (req, res) => {
     const name = req.body.name || '';
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
+    // Validar que users sea un array
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Users must be an array' });
     }
 
+    // Si se está creando un chat grupal
     if (group) {
       let imageUrl = '';
 
+      // Subir imagen si existe
       if (req.file?.path) {
         const result = await uploadImage(req.file.path);
         imageUrl = result.secure_url;
       }
 
+      // Asegurarse de que el usuario creador sea admin y participante
       group.admins = [userId.toString()];
 
       if (!group.participants.includes(userId.toString())) {
@@ -51,16 +55,18 @@ const createChat = async (req, res) => {
 
       await newChat.save();
 
+      // Actualizar los chats de los usuarios participantes
       await User.updateMany(
         { _id: { $in: group.participants.map(id => new mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
       );
 
-      console.log(newChat)
+      console.log(newChat);
 
       io.emit('newChat', newChat);
-      res.status(201).json(newChat);
+      return res.status(201).json(newChat);
     } else {
+ 
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
@@ -107,13 +113,12 @@ const createChat = async (req, res) => {
       );
 
       io.emit('newChat', newChat);
-      res.status(201).json(newChat);
+      return res.status(201).json(newChat);
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
+    return res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
-
 
 const getAllChats = async (req, res) => {
   try {
