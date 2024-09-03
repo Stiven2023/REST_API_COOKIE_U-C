@@ -205,8 +205,12 @@ const getChatById = async (req, res) => {
 const updateChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
     const decoded = Jwt.verify(token, config.secret);
-    const userId = decoded.id;
+    const userId = new mongoose.Types.ObjectId(decoded.id);
 
     const chatId = req.params.chatId;
     const { name, users, group } = req.body;
@@ -217,7 +221,7 @@ const updateChat = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
-    if (!chat.users.includes(userId)) {
+    if (!chat.users.includes(userId.toString())) {
       return res.status(403).json({ error: 'You are not a member of this chat' });
     }
 
@@ -226,24 +230,24 @@ const updateChat = async (req, res) => {
     }
 
     if (Array.isArray(users)) {
-      chat.users = users;
+      chat.users = users.map(id => new mongoose.Types.ObjectId(id));
     }
 
     if (group && Object.keys(group).length > 0) {
       const { image, admins, participants } = group;
 
-      if (image) {
-        const result = await uploadImage(image);
+      if (req.files?.image) {
+        const result = await uploadImage(req.files?.image.tempFilePath);
         chat.group.image = result.secure_url;
       }
 
       if (Array.isArray(admins) && admins.length > 0) {
-        chat.group.admins = admins.includes(userId) ? admins : [...admins, userId];
+        chat.group.admins = admins.includes(userId.toString()) ? admins : [...admins, userId.toString()];
       }
 
       if (Array.isArray(participants) && participants.length > 0) {
-        chat.group.participants = participants.includes(userId) ? participants : [...participants, userId];
-        chat.users = chat.group.participants;
+        chat.group.participants = participants.includes(userId.toString()) ? participants : [...participants, userId.toString()];
+        chat.users = chat.group.participants.map(id => new mongoose.Types.ObjectId(id));
       }
     }
 
@@ -262,6 +266,7 @@ const updateChat = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
+
 
 const deleteChat = async (req, res) => {
   try {
