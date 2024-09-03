@@ -713,20 +713,39 @@ class PostController {
    * @param {Object} res - La respuesta HTTP
    * @returns {Object} - Lista de posts reportados
    */
+
   static async getReportedPosts(req, res) {
     try {
-      const posts = await Post.find({ "reports.0": { $exists: true } }) // Solo posts que tienen al menos un reporte
-        .populate("userId", "username email") // Popula campos de usuario si es necesario
-        .populate("tagsUsers", "username") // Popula usuarios etiquetados si es necesario
-        .populate("comments.userId", "username") // Popula usuarios de comentarios si es necesario
-        .populate("originalPostUser.id", "username email") // Popula el usuario del post original si es necesario
-        .exec();
+      // Leer todas las publicaciones reportadas de la base de datos
+      const posts = await PostModel.find({
+        "reports.0": { $exists: true },
+      }).lean();
 
+      // Obtener los IDs de usuario de cada publicación
+      const userIds = posts.map((post) => post.userId);
+
+      // Buscar los usuarios correspondientes y obtener ciertos campos
+      const users = await User.find(
+        { _id: { $in: userIds } },
+        "username fullname image"
+      ).lean();
+
+      // Crear un mapa de usuarios por ID
+      const userMap = {};
+      users.forEach((user) => (userMap[user._id] = user));
+
+      // Asignar cada publicación a su respectivo usuario
+      posts.forEach((post) => {
+        post.user = userMap[post.userId] || {}; // Añadir usuario si existe
+      });
+
+      // Devolver las publicaciones reportadas con la información de usuario
       res.json(posts);
-    } catch (err) {
+    } catch (error) {
+      // Manejar errores y devolver un error 500 con detalles
       res
         .status(500)
-        .json({ message: "Error al obtener posts reportados", error: err });
+        .json({ Error: "Failed to read resources", Details: error });
     }
   }
 
