@@ -13,36 +13,46 @@ const upload = multer({ storage });
 const createChat = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
     const decoded = Jwt.verify(token, config.secret);
     const userId = new mongoose.Types.ObjectId(decoded.id);
 
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
 
-    console.log("image content", req.files?.image)
+    console.log("Received data:", {
+      users,
+      name,
+      group: req.body.group,
+      image: req.files?.image
+    });
 
-    // Subir imagen si existe antes de parsear group
     let imageUrl = '';
 
     if (req.files.image) {
-
-      const result = await uploadImage(req.file.path);
-      imageUrl = result.secure_url;
+      try {
+        const result = await uploadImage(req.files.image.tempFilePath);
+        imageUrl = result.secure_url;
+        console.log("Image uploaded:", result);
+        await fs.unlink(req.files.image.tempFilePath);
+      } catch (imageError) {
+        console.error("Image upload failed:", imageError);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
     }
 
-    // Parsear el objeto group después de subir la imagen
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
-    // Validar que users sea un array
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Users must be an array' });
     }
 
-    // Si se está creando un chat grupal
     if (group) {
-      console.log(group);
+      console.log("Group data before processing:", group);
 
-      // Asegurarse de que el usuario creador sea admin y participante
       group.admins = [userId.toString()];
 
       if (!group.participants.includes(userId.toString())) {
@@ -62,18 +72,16 @@ const createChat = async (req, res) => {
 
       await newChat.save();
 
-      // Actualizar los chats de los usuarios participantes
       await User.updateMany(
         { _id: { $in: group.participants.map(id => new mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
       );
 
-      console.log(newChat);
+      console.log("New chat created:", newChat);
 
       io.emit('newChat', newChat);
       return res.status(201).json(newChat);
     } else {
-      // Si se está creando un chat individual
       if (name) {
         if (users.length < 3) {
           return res.status(400).json({ error: 'At least three users are required to create a named chat' });
@@ -123,6 +131,7 @@ const createChat = async (req, res) => {
       return res.status(201).json(newChat);
     }
   } catch (error) {
+    console.error("Error creating chat:", error);
     return res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
@@ -133,11 +142,10 @@ const getAllChats = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = decoded.id;
 
-    // Encuentra todos los chats donde el usuario es parte, pero que no han sido marcados como eliminados por ese usuario
     const chats = await Chat.find({
       users: userId,
       $or: [
-        { "deleted.by": { $ne: userId } }, // El chat no ha sido eliminado por el usuario
+        { "deleted.by": { $ne: userId } },
       ]
     });
 
