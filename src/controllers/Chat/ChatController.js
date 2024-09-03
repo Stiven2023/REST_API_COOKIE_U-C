@@ -19,7 +19,7 @@ const createChat = async (req, res) => {
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
 
-    console.log(req.body, req.file, re)
+    console.log(req.body, req.file, req.files.image)
 
     // Subir imagen si existe antes de parsear group
     let imageUrl = '';
