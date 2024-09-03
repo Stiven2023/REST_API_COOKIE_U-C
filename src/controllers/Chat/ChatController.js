@@ -6,6 +6,7 @@ import config from '../../config.js';
 import mongoose from "mongoose"
 import { io } from '../../index.js';
 import { uploadImage } from '../../cloudinary.js';
+import fs from 'fs-extra';
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
