@@ -204,6 +204,7 @@ const getChatById = async (req, res) => {
 
 const updateChat = async (req, res) => {
   try {
+    // Verifica el token
     const token = req.headers['x-access-token'];
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
@@ -212,41 +213,58 @@ const updateChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = new mongoose.Types.ObjectId(decoded.id);
 
+    // Imprime el token decodificado
+    console.log("Decoded token:", decoded);
+
     const chatId = req.params.chatId;
     const { name, users, group } = req.body;
 
+    // Imprime los datos recibidos en el cuerpo de la solicitud
+    console.log("Request body:", { name, users, group });
+
     const chat = await Chat.findById(chatId);
 
+    // Verifica si el chat existe
     if (!chat) {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
+    // Verifica si el usuario es miembro del chat
     if (!chat.users.includes(userId.toString())) {
       return res.status(403).json({ error: 'You are not a member of this chat' });
     }
 
+    // Actualiza el nombre del chat si se proporciona
     if (name) {
       chat.name = name;
     }
 
+    // Actualiza los usuarios del chat si se proporciona
     if (Array.isArray(users)) {
       chat.users = users.map(id => new mongoose.Types.ObjectId(id));
     }
 
+    // Actualiza el grupo del chat si se proporciona
     if (group && Object.keys(group).length > 0) {
       const { image, admins, participants } = group;
 
-      console.log(req.files?.image)
+      // Imprime los datos del grupo recibidos
+      console.log("Group data:", { image, admins, participants });
 
+      // Maneja la imagen si se proporciona
       if (req.files?.image) {
-        const result = await uploadImage(req.files?.image.tempFilePath);
+        console.log("Received image file:", req.files.image);
+        const result = await uploadImage(req.files.image.tempFilePath);
         chat.group.image = result.secure_url;
+        console.log("Image upload result:", result);
       }
 
+      // Actualiza los administradores del grupo
       if (Array.isArray(admins) && admins.length > 0) {
         chat.group.admins = admins.includes(userId.toString()) ? admins : [...admins, userId.toString()];
       }
 
+      // Actualiza los participantes del grupo
       if (Array.isArray(participants) && participants.length > 0) {
         chat.group.participants = participants.includes(userId.toString()) ? participants : [...participants, userId.toString()];
         chat.users = chat.group.participants.map(id => new mongoose.Types.ObjectId(id));
@@ -255,6 +273,7 @@ const updateChat = async (req, res) => {
 
     await chat.save();
 
+    // Emite el evento de actualización del chat
     io.to(chatId).emit('updateChat', {
       chatId: chat._id,
       name: chat.name,
@@ -262,12 +281,14 @@ const updateChat = async (req, res) => {
       group: chat.group
     });
 
+    // Responde con el chat actualizado
     res.status(200).json({ message: 'Chat updated successfully', chat: { chatId: chat._id, name: chat.name, users: chat.users, group: chat.group } });
   } catch (error) {
     console.error("Error updating chat:", error);
     res.status(500).json({ error: 'Internal Server Error', errorMessage: error.message });
   }
 };
+
 
 
 const deleteChat = async (req, res) => {
