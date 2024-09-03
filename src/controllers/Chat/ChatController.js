@@ -19,7 +19,15 @@ const createChat = async (req, res) => {
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
 
-    // Parsear el objeto group después de verificar
+    // Subir imagen si existe antes de parsear group
+    let imageUrl = '';
+
+    if (req.file && req.file.path) {
+      // Aquí puedes subir la imagen a un servicio externo si lo deseas
+      imageUrl = req.file.path; // En este caso, usaremos la ruta local
+    }
+
+    // Parsear el objeto group después de subir la imagen
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
     // Validar que users sea un array
@@ -41,7 +49,7 @@ const createChat = async (req, res) => {
       const newChat = new Chat({
         name: name || '',
         group: {
-          image: '', // No hay imagen en este caso
+          image: imageUrl || '',
           admins: group.admins.map(id => new mongoose.Types.ObjectId(id)),
           participants: group.participants.map(id => new mongoose.Types.ObjectId(id)),
         },
