@@ -715,23 +715,18 @@ class PostController {
    */
   static async getReportedPosts(req, res) {
     try {
-      // Obtener todos los posts que tienen al menos un reporte
-      const reportedPosts = await PostModel.find({
-        "reports.0": { $exists: true },
-      })
-        .populate("userId")
-        .lean();
+      const posts = await Post.find({ "reports.0": { $exists: true } }) // Solo posts que tienen al menos un reporte
+        .populate("userId", "username email") // Popula campos de usuario si es necesario
+        .populate("tagsUsers", "username") // Popula usuarios etiquetados si es necesario
+        .populate("comments.userId", "username") // Popula usuarios de comentarios si es necesario
+        .populate("originalPostUser.id", "username email") // Popula el usuario del post original si es necesario
+        .exec();
 
-      if (reportedPosts.length === 0) {
-        return res.status(404).json({ message: "No reported posts found" });
-      }
-
-      res.json(reportedPosts);
-    } catch (error) {
-      res.status(500).json({
-        Error: "Failed to retrieve reported posts",
-        Details: error.message,
-      });
+      res.json(posts);
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error al obtener posts reportados", error: err });
     }
   }
 
