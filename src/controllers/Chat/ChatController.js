@@ -26,9 +26,8 @@ const createChat = async (req, res) => {
 
     if (req.files.image) {
 
-      console.log("images", req.files, req.files.path, req.body.group.image, req.body.group.image.file)
-      // Aquí puedes subir la imagen a un servicio externo si lo deseas
-      imageUrl = req.files?.image; // En este caso, usaremos la ruta local
+      const result = await uploadImage(req.file.path);
+      imageUrl = result.secure_url;
     }
 
     // Parsear el objeto group después de subir la imagen
