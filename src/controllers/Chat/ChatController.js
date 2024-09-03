@@ -236,6 +236,8 @@ const updateChat = async (req, res) => {
     if (group && Object.keys(group).length > 0) {
       const { image, admins, participants } = group;
 
+      console.log(req.files?.image)
+
       if (req.files?.image) {
         const result = await uploadImage(req.files?.image.tempFilePath);
         chat.group.image = result.secure_url;
