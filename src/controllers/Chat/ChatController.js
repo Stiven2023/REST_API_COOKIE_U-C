@@ -19,16 +19,16 @@ const createChat = async (req, res) => {
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
 
-    console.log(req.body, req.file)
+    console.log(req.body, req.file, re)
 
     // Subir imagen si existe antes de parsear group
     let imageUrl = '';
 
-    if (req.file && req.file.path && req.body.group.image && req.body.group.image.file) {
+    if (req.files || req.files.path || req.files.image || req.body.group.image || req.body.group.image.file) {
 
-      console.log("images", req.file, req.file.path, req.body.group.image, req.body.group.image.file)
+      console.log("images", req.files, req.files.path, req.body.group.image, req.body.group.image.file)
       // Aquí puedes subir la imagen a un servicio externo si lo deseas
-      imageUrl = req.body.group.image.file.path; // En este caso, usaremos la ruta local
+      imageUrl = req.files.image; // En este caso, usaremos la ruta local
     }
 
     // Parsear el objeto group después de subir la imagen
