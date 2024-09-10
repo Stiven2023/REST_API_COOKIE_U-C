@@ -21,6 +21,7 @@ const createChat = async (req, res) => {
     const decoded = Jwt.verify(token, config.secret);
     const userId = new mongoose.Types.ObjectId(decoded.id);
 
+    // Parsear los usuarios del cuerpo de la solicitud
     const users = req.body.users ? JSON.parse(req.body.users) : [];
     const name = req.body.name || '';
 
@@ -31,31 +32,38 @@ const createChat = async (req, res) => {
       image: req.files?.image
     });
 
+    // Inicializar la URL de la imagen como cadena vacía
     let imageUrl = '';
 
-    if (req.files.image) {
+    // Verificar si existe una imagen para subir
+    if (req.files?.image) {
       try {
         const result = await uploadImage(req.files.image.tempFilePath);
         imageUrl = result.secure_url;
         console.log("Image uploaded:", result);
-        await fs.unlink(req.files.image.tempFilePath);
+        await fs.unlink(req.files.image.tempFilePath); // Eliminar el archivo temporal
       } catch (imageError) {
         console.error("Image upload failed:", imageError);
         return res.status(500).json({ error: 'Failed to upload image' });
       }
     }
 
+    // Manejo de `group`, si se envía como parte de la solicitud
     let group = req.body.group ? JSON.parse(req.body.group) : null;
 
+    // Validar que `users` sea un array
     if (!Array.isArray(users)) {
       return res.status(400).json({ error: 'Users must be an array' });
     }
 
+    // Si se trata de un chat de grupo
     if (group) {
       console.log("Group data before processing:", group);
 
+      // Añadir el creador a la lista de admins
       group.admins = [userId.toString()];
 
+      // Añadir el creador a la lista de participantes si no está ya
       if (!group.participants.includes(userId.toString())) {
         group.participants.push(userId.toString());
       }
@@ -63,7 +71,7 @@ const createChat = async (req, res) => {
       const newChat = new Chat({
         name: name || '',
         group: {
-          image: imageUrl || '',
+          image: imageUrl || '', // Usar la URL de la imagen si existe
           admins: group.admins.map(id => new mongoose.Types.ObjectId(id)),
           participants: group.participants.map(id => new mongoose.Types.ObjectId(id)),
         },
@@ -73,6 +81,7 @@ const createChat = async (req, res) => {
 
       await newChat.save();
 
+      // Actualizar los usuarios con el nuevo chat
       await User.updateMany(
         { _id: { $in: group.participants.map(id => new mongoose.Types.ObjectId(id)) } },
         { $push: { chats: newChat._id } }
@@ -80,17 +89,16 @@ const createChat = async (req, res) => {
 
       console.log("New chat created:", newChat);
 
-      io.emit('newChat', newChat);
+      io.emit('newChat', newChat); // Emitir el evento del nuevo chat
       return res.status(201).json(newChat);
     } else {
-      if (name) {
-        if (users.length < 3) {
-          return res.status(400).json({ error: 'At least three users are required to create a named chat' });
-        }
-      } else {
-        if (users.length !== 2) {
-          return res.status(400).json({ error: 'Exactly two users are required to create a chat' });
-        }
+      // Validaciones para chats individuales
+      if (name && users.length < 3) {
+        return res.status(400).json({ error: 'At least three users are required to create a named chat' });
+      }
+
+      if (!name && users.length !== 2) {
+        return res.status(400).json({ error: 'Exactly two users are required to create a chat' });
       }
 
       if (!users.includes(userId.toString())) {
@@ -98,6 +106,8 @@ const createChat = async (req, res) => {
       }
 
       const userObjectIds = users.map(id => new mongoose.Types.ObjectId(id));
+
+      // Verificar que todos los usuarios existen
       const participants = await User.find({ _id: { $in: userObjectIds } }, 'username');
       if (participants.length !== users.length) {
         return res.status(404).json({ error: 'One or more users not found' });
@@ -106,6 +116,7 @@ const createChat = async (req, res) => {
       const usernames = participants.map(user => user.username);
       const chatName = name || usernames.join(', ');
 
+      // Verificar si ya existe un chat con los mismos participantes
       const existingChat = await Chat.findOne({
         name: chatName,
         users: { $all: userObjectIds },
@@ -115,6 +126,7 @@ const createChat = async (req, res) => {
         return res.status(400).json({ error: 'A chat with the same name and participants already exists' });
       }
 
+      // Crear un nuevo chat
       const newChat = new Chat({
         name: chatName,
         users: userObjectIds,
@@ -123,12 +135,13 @@ const createChat = async (req, res) => {
 
       await newChat.save();
 
+      // Actualizar los usuarios con el nuevo chat
       await User.updateMany(
         { _id: { $in: userObjectIds } },
         { $push: { chats: newChat._id } }
       );
 
-      io.emit('newChat', newChat);
+      io.emit('newChat', newChat); // Emitir el evento del nuevo chat
       return res.status(201).json(newChat);
     }
   } catch (error) {
